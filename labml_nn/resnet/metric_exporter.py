@@ -1,16 +1,5 @@
 import os
-import time
-
-import requests
-from selenium.webdriver.common.keys import Keys
 import sys
-from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.webdriver.firefox.service import Service as FirefoxService
-from selenium.webdriver.support.wait import WebDriverWait
-from selenium.webdriver.support import expected_conditions
-from bs4 import BeautifulSoup
-import bs4
 import yaml
 
 
@@ -60,19 +49,6 @@ def main():
     s_idx = response.text.find("name")
     e_idx = response.text[s_idx:].find("\",\"")
     title = response.text[s_idx:s_idx + e_idx]"""
-
-    config_names = ["bottlenecks", "dataset_name", "device", "--- device_info", "epochs",
-                    "first_kernel_size", "inner_iterations", "loss_func", "mode", "model",
-                    "n_blocks", "n_channels", "optimizer", "--- amsgrad",
-                    "--- betas", "--- eps", "--- learning_rate", "--- optimized_adam_update",
-                    "--- optimizer", "--- weight_decay", "--- weight_decay_absolute",
-                    "--- weight_decay_obj", "--- weight_decouple",
-                    "train_batch_size", "train_dataset", "train_loader", "train_loader_shuffle",
-                    "trainer",
-                    "valid_batch_size", "valid_dataset", "valid_loader", "valid_loader_shuffle",
-                    "validator"]
-
-    configs = {key: '' for key in config_names}
 
     cfg = None
     with open(os.path.join(path, "configs.yaml"), 'r') as stream:
