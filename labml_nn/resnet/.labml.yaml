@@ -1,7 +1,7 @@
 web_api: 'http://localhost:5005/api/v1/track?'
 web_api_frequency: 10
 web_api_verify_connection: false
-web_api_open_browser: true
+web_api_open_browser: false
 indicators:
   - class_name: Scalar
     is_print: false
