@@ -11,36 +11,49 @@ from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.support import expected_conditions
 from bs4 import BeautifulSoup
 import bs4
+import yaml
 
 def main():
-    base_url = "http://localhost:5005/run/"
     if len(sys.argv) > 1:
-        url = base_url + sys.argv[1]
+        run_id = sys.argv[1]
     else:
-        inpt = input("Please enter the run ID: ")
-        if inpt.strip() == "":
+        run_id = input("Please enter the run ID: ")
+        if run_id.strip() == "":
             return
-        url = base_url + inpt
+
+    base_path = os.path.join(os.getcwd(), "logs", "resnet")
 
     while True:
-        response = requests.get(url)
-        if response.status_code == 404:
-            print("Error: 404 Page not found!", file=sys.stderr)
-            inpt = input("Please enter a valid run ID: ")
-            if inpt.strip() == "":
+        path = os.path.join(base_path, run_id)
+        if not os.path.exists(path):
+            print(f"Error: Run with ID {run_id} not found!", file=sys.stderr)
+            run_id = input("Please enter a valid run ID: ")
+            if run_id.strip() == "":
                 return
-            url = base_url + inpt
         else:
             break
 
-    config_page = requests.get(url + "/configs")
-    soup = BeautifulSoup(config_page.text, 'html.parser')
+    config_names = ["bottlenecks", "dataset_name", "device", "--- device_info", "epochs",
+                    "first_kernel_size", "inner_iterations", "loss_func", "mode", "model",
+                    "n_blocks", "n_channels", "optimizer", "--- amsgrad",
+                    "--- betas", "--- eps", "--- learning_rate", "--- optimized_adam_update",
+                    "--- optimizer", "--- weight_decay", "--- weight_decay_absolute",
+                    "--- weight_decay_obj", "--- weight_decouple",
+                    "train_batch_size", "train_dataset", "train_loader", "train_loader_shuffle",
+                    "trainer",
+                    "valid_batch_size", "valid_dataset", "valid_loader", "valid_loader_shuffle",
+                    "validator"]
 
-    return
-    path = os.path.join(os.getcwd(), "geckodriver-v0.33.0-win64", "geckodriver.exe")
-    print(path)
-    driver = webdriver.Firefox(executable_path=path, timeout=1000000)
-    driver.get("http://localhost:5005/runs")
+    configs = {key: '' for key in config_names}
+
+    cfg = None
+    with open(os.path.join(path, "configs.yaml"), 'r') as stream:
+        try:
+            # Converts yaml document to python object
+            cfg = yaml.safe_load(stream)
+        except yaml.YAMLError as e:
+            print(e)
+
     print()
 
 
