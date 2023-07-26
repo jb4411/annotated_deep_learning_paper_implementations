@@ -15,6 +15,7 @@ from labml import experiment
 from labml.configs import option
 from labml_nn.experiments.cifar10 import CIFAR10Configs
 from labml_nn.resnet import ResNetBase
+from torchvision import models
 
 
 class Configs(CIFAR10Configs):
@@ -58,20 +59,26 @@ def main():
     conf = Configs()
     # Load configurations
     experiment.configs(conf, {
-        'bottlenecks': [8, 16, 16],
-        'n_blocks': [6, 6, 6],
+        'n_blocks': [3, 4, 23, 3],
+        'n_channels':  [16, 32, 64, 128],
 
         'optimizer.optimizer': 'Adam',
-        'optimizer.learning_rate': 2.5e-4,
+        'optimizer.learning_rate': 0.1,
+        'optimizer.weight_decay': 0.0001,
+        'optimizer.momentum': 0.9,
 
-        'epochs': 500,
-        'train_batch_size': 256,
+        'epochs': 10,
+        'train_batch_size': 128,
 
         'train_dataset': 'cifar10_train_augmented',
         'valid_dataset': 'cifar10_valid_no_augment',
     })
     # Set model for saving/loading
-    experiment.add_pytorch_models({'model': conf.model})
+    #experiment.add_pytorch_models({'model': conf.model})
+
+    model = models.resnet101(pretrained=False)
+    experiment.add_pytorch_models({'model': model})
+
     # Start the experiment and run the training loop
     with experiment.start():
         conf.run()
