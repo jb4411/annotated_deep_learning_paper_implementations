@@ -60,24 +60,28 @@ def main():
     # Load configurations
     experiment.configs(conf, {
         'n_blocks': [3, 4, 23, 3],
-        'n_channels':  [16, 32, 64, 128],
+        'n_channels': [64, 128, 256, 512],
+        'bottlenecks': [64, 128, 256, 512],
+        'first_kernel_size': 7,
 
-        'optimizer.optimizer': 'Adam',
-        'optimizer.learning_rate': 0.1,
+        'optimizer.optimizer': 'SGD',
+        'optimizer.learning_rate': 0.001,
         'optimizer.weight_decay': 0.0001,
         'optimizer.momentum': 0.9,
 
         'epochs': 10,
-        'train_batch_size': 128,
+        'train_batch_size': 32,
 
         'train_dataset': 'cifar10_train_augmented',
         'valid_dataset': 'cifar10_valid_no_augment',
     })
+
     # Set model for saving/loading
-    #experiment.add_pytorch_models({'model': conf.model})
+    experiment.add_pytorch_models({'model': conf.model})
 
     model = models.resnet101(pretrained=False)
-    experiment.add_pytorch_models({'model': model})
+
+    #experiment.add_pytorch_models({'model': model})
 
     # Start the experiment and run the training loop
     with experiment.start():
