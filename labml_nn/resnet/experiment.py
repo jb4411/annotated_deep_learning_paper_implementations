@@ -64,7 +64,7 @@ def main():
         'optimizer.optimizer': 'Adam',
         'optimizer.learning_rate': 2.5e-4,
 
-        'epochs': 1,
+        'epochs': 500,
         'train_batch_size': 256,
 
         'train_dataset': 'cifar10_train_augmented',
