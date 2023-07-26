@@ -1,0 +1,683 @@
+accuracy:
+  computed: <labml_helpers.metrics.accuracy.Accuracy object at 0x0000020B946AEAA0>
+  is_explicitly_specified: false
+  is_hyperparam: null
+  is_meta: null
+  name: accuracy
+  options: []
+  order: 7
+  type: <class 'labml_helpers.metrics.accuracy.Accuracy'>
+  value: null
+bottlenecks:
+  computed:
+  - 8
+  - 16
+  - 16
+  is_explicitly_specified: true
+  is_hyperparam: null
+  is_meta: null
+  name: bottlenecks
+  options: []
+  order: 3
+  type: typing.Optional[typing.List[int]]
+  value:
+  - 8
+  - 16
+  - 16
+dataset_name:
+  computed: CIFAR10
+  is_explicitly_specified: false
+  is_hyperparam: null
+  is_meta: null
+  name: dataset_name
+  options:
+  - CIFAR10
+  - MNIST
+  order: 10
+  type: <class 'str'>
+  value: null
+dataset_transforms:
+  computed: null
+  is_explicitly_specified: false
+  is_hyperparam: null
+  is_meta: null
+  name: dataset_transforms
+  options:
+  - mnist_transforms
+  - cifar10_transforms
+  order: -1
+  type: <class 'torchvision.transforms.transforms.Compose'>
+  value: null
+device:
+  computed: cuda:0
+  is_explicitly_specified: false
+  is_hyperparam: null
+  is_meta: null
+  name: device
+  options: []
+  order: 5
+  type: <class 'torch.device'>
+  value: null
+device.cuda_device:
+  computed: 0
+  is_explicitly_specified: false
+  is_hyperparam: false
+  is_meta: null
+  name: cuda_device
+  options: []
+  order: 3
+  type: <class 'int'>
+  value: null
+device.device:
+  computed: cuda:0
+  is_explicitly_specified: false
+  is_hyperparam: null
+  is_meta: null
+  name: device
+  options:
+  - _device
+  order: 0
+  type: <class 'torch.device'>
+  value: null
+device.device_info:
+  computed: GPU:0 - NVIDIA GeForce RTX 4090
+  is_explicitly_specified: false
+  is_hyperparam: null
+  is_meta: null
+  name: device_info
+  options:
+  - _device_info
+  order: 1
+  type: <class 'labml_helpers.device.DeviceInfo'>
+  value: null
+device.use_cuda:
+  computed: true
+  is_explicitly_specified: false
+  is_hyperparam: false
+  is_meta: null
+  name: use_cuda
+  options: []
+  order: 2
+  type: <class 'bool'>
+  value: null
+epochs:
+  computed: 10
+  is_explicitly_specified: true
+  is_hyperparam: null
+  is_meta: null
+  name: epochs
+  options: []
+  order: 24
+  type: <class 'int'>
+  value: 10
+first_kernel_size:
+  computed: 3
+  is_explicitly_specified: false
+  is_hyperparam: null
+  is_meta: null
+  name: first_kernel_size
+  options: []
+  order: 4
+  type: <class 'int'>
+  value: null
+inner_iterations:
+  computed: 10
+  is_explicitly_specified: false
+  is_hyperparam: null
+  is_meta: null
+  name: inner_iterations
+  options: []
+  order: 14
+  type: <class 'int'>
+  value: null
+is_loop_on_interrupt:
+  computed: false
+  is_explicitly_specified: false
+  is_hyperparam: null
+  is_meta: true
+  name: is_loop_on_interrupt
+  options: []
+  order: 30
+  type: <class 'bool'>
+  value: null
+is_save_models:
+  computed: false
+  is_explicitly_specified: false
+  is_hyperparam: null
+  is_meta: true
+  name: is_save_models
+  options: []
+  order: 26
+  type: <class 'bool'>
+  value: null
+is_track_time:
+  computed: false
+  is_explicitly_specified: false
+  is_hyperparam: null
+  is_meta: null
+  name: is_track_time
+  options: []
+  order: 16
+  type: <class 'bool'>
+  value: null
+log_new_line_interval:
+  computed: 1
+  is_explicitly_specified: false
+  is_hyperparam: null
+  is_meta: true
+  name: log_new_line_interval
+  options: []
+  order: 27
+  type: <class 'int'>
+  value: null
+log_write_interval:
+  computed: 1
+  is_explicitly_specified: false
+  is_hyperparam: null
+  is_meta: true
+  name: log_write_interval
+  options: []
+  order: 28
+  type: <class 'int'>
+  value: null
+loop_count:
+  computed: 10
+  is_explicitly_specified: false
+  is_hyperparam: null
+  is_meta: true
+  name: loop_count
+  options:
+  - _data_loop_count
+  order: 23
+  type: <class 'int'>
+  value: null
+loop_step:
+  computed: null
+  is_explicitly_specified: false
+  is_hyperparam: null
+  is_meta: true
+  name: loop_step
+  options: []
+  order: 25
+  type: <class 'int'>
+  value: null
+loss_func:
+  computed: CrossEntropyLoss()
+  is_explicitly_specified: false
+  is_hyperparam: null
+  is_meta: null
+  name: loss_func
+  options: []
+  order: 31
+  type: <class 'torch.nn.modules.loss.CrossEntropyLoss'>
+  value: null
+mode:
+  computed: <labml_helpers.train_valid.ModeState object at 0x0000020B95889AE0>
+  is_explicitly_specified: false
+  is_hyperparam: null
+  is_meta: null
+  name: mode
+  options:
+  - from_type
+  order: 6
+  type: <class 'labml_helpers.train_valid.ModeState'>
+  value: null
+model:
+  computed: "Sequential(\n  (0): ResNetBase(\n    (conv): Conv2d(3, 16, kernel_size=(3,\
+    \ 3), stride=(2, 2), padding=(1, 1))\n    (bn): BatchNorm2d(16, eps=1e-05, momentum=0.1,\
+    \ affine=True, track_running_stats=True)\n    (blocks): Sequential(\n      (0):\
+    \ BottleneckResidualBlock(\n        (conv1): Conv2d(16, 8, kernel_size=(1, 1),\
+    \ stride=(1, 1))\n        (bn1): BatchNorm2d(8, eps=1e-05, momentum=0.1, affine=True,\
+    \ track_running_stats=True)\n        (act1): ReLU()\n        (conv2): Conv2d(8,\
+    \ 8, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1))\n        (bn2): BatchNorm2d(8,\
+    \ eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)\n        (act2):\
+    \ ReLU()\n        (conv3): Conv2d(8, 16, kernel_size=(1, 1), stride=(1, 1))\n\
+    \        (bn3): BatchNorm2d(16, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)\n\
+    \        (shortcut): ShortcutProjection(\n          (conv): Conv2d(16, 16, kernel_size=(1,\
+    \ 1), stride=(2, 2))\n          (bn): BatchNorm2d(16, eps=1e-05, momentum=0.1,\
+    \ affine=True, track_running_stats=True)\n        )\n        (act3): ReLU()\n\
+    \      )\n      (1): BottleneckResidualBlock(\n        (conv1): Conv2d(16, 8,\
+    \ kernel_size=(1, 1), stride=(1, 1))\n        (bn1): BatchNorm2d(8, eps=1e-05,\
+    \ momentum=0.1, affine=True, track_running_stats=True)\n        (act1): ReLU()\n\
+    \        (conv2): Conv2d(8, 8, kernel_size=(3, 3), stride=(1, 1), padding=(1,\
+    \ 1))\n        (bn2): BatchNorm2d(8, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)\n\
+    \        (act2): ReLU()\n        (conv3): Conv2d(8, 16, kernel_size=(1, 1), stride=(1,\
+    \ 1))\n        (bn3): BatchNorm2d(16, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)\n\
+    \        (shortcut): Identity()\n        (act3): ReLU()\n      )\n      (2): BottleneckResidualBlock(\n\
+    \        (conv1): Conv2d(16, 8, kernel_size=(1, 1), stride=(1, 1))\n        (bn1):\
+    \ BatchNorm2d(8, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)\n\
+    \        (act1): ReLU()\n        (conv2): Conv2d(8, 8, kernel_size=(3, 3), stride=(1,\
+    \ 1), padding=(1, 1))\n        (bn2): BatchNorm2d(8, eps=1e-05, momentum=0.1,\
+    \ affine=True, track_running_stats=True)\n        (act2): ReLU()\n        (conv3):\
+    \ Conv2d(8, 16, kernel_size=(1, 1), stride=(1, 1))\n        (bn3): BatchNorm2d(16,\
+    \ eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)\n        (shortcut):\
+    \ Identity()\n        (act3): ReLU()\n      )\n      (3): BottleneckResidualBlock(\n\
+    \        (conv1): Conv2d(16, 8, kernel_size=(1, 1), stride=(1, 1))\n        (bn1):\
+    \ BatchNorm2d(8, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)\n\
+    \        (act1): ReLU()\n        (conv2): Conv2d(8, 8, kernel_size=(3, 3), stride=(1,\
+    \ 1), padding=(1, 1))\n        (bn2): BatchNorm2d(8, eps=1e-05, momentum=0.1,\
+    \ affine=True, track_running_stats=True)\n        (act2): ReLU()\n        (conv3):\
+    \ Conv2d(8, 16, kernel_size=(1, 1), stride=(1, 1))\n        (bn3): BatchNorm2d(16,\
+    \ eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)\n        (shortcut):\
+    \ Identity()\n        (act3): ReLU()\n      )\n      (4): BottleneckResidualBlock(\n\
+    \        (conv1): Conv2d(16, 8, kernel_size=(1, 1), stride=(1, 1))\n        (bn1):\
+    \ BatchNorm2d(8, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)\n\
+    \        (act1): ReLU()\n        (conv2): Conv2d(8, 8, kernel_size=(3, 3), stride=(1,\
+    \ 1), padding=(1, 1))\n        (bn2): BatchNorm2d(8, eps=1e-05, momentum=0.1,\
+    \ affine=True, track_running_stats=True)\n        (act2): ReLU()\n        (conv3):\
+    \ Conv2d(8, 16, kernel_size=(1, 1), stride=(1, 1))\n        (bn3): BatchNorm2d(16,\
+    \ eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)\n        (shortcut):\
+    \ Identity()\n        (act3): ReLU()\n      )\n      (5): BottleneckResidualBlock(\n\
+    \        (conv1): Conv2d(16, 8, kernel_size=(1, 1), stride=(1, 1))\n        (bn1):\
+    \ BatchNorm2d(8, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)\n\
+    \        (act1): ReLU()\n        (conv2): Conv2d(8, 8, kernel_size=(3, 3), stride=(1,\
+    \ 1), padding=(1, 1))\n        (bn2): BatchNorm2d(8, eps=1e-05, momentum=0.1,\
+    \ affine=True, track_running_stats=True)\n        (act2): ReLU()\n        (conv3):\
+    \ Conv2d(8, 16, kernel_size=(1, 1), stride=(1, 1))\n        (bn3): BatchNorm2d(16,\
+    \ eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)\n        (shortcut):\
+    \ Identity()\n        (act3): ReLU()\n      )\n      (6): BottleneckResidualBlock(\n\
+    \        (conv1): Conv2d(16, 16, kernel_size=(1, 1), stride=(1, 1))\n        (bn1):\
+    \ BatchNorm2d(16, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)\n\
+    \        (act1): ReLU()\n        (conv2): Conv2d(16, 16, kernel_size=(3, 3), stride=(1,\
+    \ 1), padding=(1, 1))\n        (bn2): BatchNorm2d(16, eps=1e-05, momentum=0.1,\
+    \ affine=True, track_running_stats=True)\n        (act2): ReLU()\n        (conv3):\
+    \ Conv2d(16, 32, kernel_size=(1, 1), stride=(1, 1))\n        (bn3): BatchNorm2d(32,\
+    \ eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)\n        (shortcut):\
+    \ ShortcutProjection(\n          (conv): Conv2d(16, 32, kernel_size=(1, 1), stride=(1,\
+    \ 1))\n          (bn): BatchNorm2d(32, eps=1e-05, momentum=0.1, affi [[...]]"
+  is_explicitly_specified: false
+  is_hyperparam: null
+  is_meta: null
+  name: model
+  options:
+  - _resnet
+  order: 0
+  type: <class 'labml_helpers.module.Module'>
+  value: null
+n_blocks:
+  computed:
+  - 6
+  - 6
+  - 6
+  is_explicitly_specified: true
+  is_hyperparam: null
+  is_meta: null
+  name: n_blocks
+  options: []
+  order: 1
+  type: typing.List[int]
+  value:
+  - 6
+  - 6
+  - 6
+n_channels:
+  computed:
+  - 16
+  - 32
+  - 64
+  is_explicitly_specified: false
+  is_hyperparam: null
+  is_meta: null
+  name: n_channels
+  options: []
+  order: 2
+  type: typing.List[int]
+  value: null
+optimizer:
+  computed: "Adam (\nParameter Group 0\n    betas: (0.9, 0.999)\n    eps: 1e-08\n\
+    \    lr: 0.00025\n    weight_decay: 0.0\n)"
+  is_explicitly_specified: false
+  is_hyperparam: null
+  is_meta: null
+  name: optimizer
+  options:
+  - _optimizer
+  order: 32
+  type: <class 'torch.optim.adam.Adam'>
+  value: null
+optimizer.amsgrad:
+  computed: false
+  is_explicitly_specified: false
+  is_hyperparam: null
+  is_meta: null
+  name: amsgrad
+  options: []
+  order: 1
+  type: <class 'bool'>
+  value: null
+optimizer.betas:
+  computed:
+  - 0.9
+  - 0.999
+  is_explicitly_specified: false
+  is_hyperparam: null
+  is_meta: null
+  name: betas
+  options: []
+  order: 4
+  type: typing.Tuple[float, float]
+  value: null
+optimizer.d_model:
+  computed: null
+  is_explicitly_specified: false
+  is_hyperparam: null
+  is_meta: null
+  name: d_model
+  options: []
+  order: -1
+  type: <class 'int'>
+  value: null
+optimizer.degenerate_to_sgd:
+  computed: null
+  is_explicitly_specified: false
+  is_hyperparam: null
+  is_meta: null
+  name: degenerate_to_sgd
+  options: []
+  order: -1
+  type: <class 'bool'>
+  value: null
+optimizer.eps:
+  computed: 1.0e-08
+  is_explicitly_specified: false
+  is_hyperparam: null
+  is_meta: null
+  name: eps
+  options: []
+  order: 5
+  type: <class 'float'>
+  value: null
+optimizer.learning_rate:
+  computed: 0.00025
+  is_explicitly_specified: true
+  is_hyperparam: null
+  is_meta: null
+  name: learning_rate
+  options: []
+  order: 3
+  type: <class 'float'>
+  value: 0.00025
+optimizer.momentum:
+  computed: null
+  is_explicitly_specified: false
+  is_hyperparam: null
+  is_meta: null
+  name: momentum
+  options: []
+  order: -1
+  type: <class 'float'>
+  value: null
+optimizer.optimized_adam_update:
+  computed: true
+  is_explicitly_specified: false
+  is_hyperparam: null
+  is_meta: null
+  name: optimized_adam_update
+  options: []
+  order: 6
+  type: <class 'bool'>
+  value: null
+optimizer.optimizer:
+  computed: "Adam (\nParameter Group 0\n    betas: (0.9, 0.999)\n    eps: 1e-08\n\
+    \    lr: 0.00025\n    weight_decay: 0.0\n)"
+  is_explicitly_specified: true
+  is_hyperparam: null
+  is_meta: null
+  name: optimizer
+  options:
+  - SGD
+  - Adam
+  - AdamW
+  - RAdam
+  - AdaBelief
+  - Noam
+  - Sophia
+  - AdamWarmupCosineDecay
+  order: 0
+  type: <class 'torch.optim.adam.Adam'>
+  value: Adam
+optimizer.parameters:
+  computed: <generator object Module.parameters at 0x0000020B947E7C30>
+  is_explicitly_specified: false
+  is_hyperparam: null
+  is_meta: true
+  name: parameters
+  options: []
+  order: 2
+  type: <built-in function any>
+  value: <generator object Module.parameters at 0x0000020B947E7C30>
+optimizer.rectify:
+  computed: null
+  is_explicitly_specified: false
+  is_hyperparam: null
+  is_meta: null
+  name: rectify
+  options: []
+  order: -1
+  type: <class 'bool'>
+  value: null
+optimizer.rho:
+  computed: null
+  is_explicitly_specified: false
+  is_hyperparam: null
+  is_meta: null
+  name: rho
+  options: []
+  order: -1
+  type: <class 'float'>
+  value: null
+optimizer.total_steps:
+  computed: null
+  is_explicitly_specified: false
+  is_hyperparam: null
+  is_meta: null
+  name: total_steps
+  options: []
+  order: -1
+  type: <class 'int'>
+  value: null
+optimizer.warmup:
+  computed: null
+  is_explicitly_specified: false
+  is_hyperparam: null
+  is_meta: null
+  name: warmup
+  options: []
+  order: -1
+  type: <class 'int'>
+  value: null
+optimizer.weight_decay:
+  computed: 0.0
+  is_explicitly_specified: false
+  is_hyperparam: null
+  is_meta: null
+  name: weight_decay
+  options: []
+  order: 8
+  type: <class 'float'>
+  value: null
+optimizer.weight_decay_absolute:
+  computed: false
+  is_explicitly_specified: false
+  is_hyperparam: null
+  is_meta: null
+  name: weight_decay_absolute
+  options: []
+  order: 10
+  type: <class 'bool'>
+  value: null
+optimizer.weight_decay_obj:
+  computed: <labml_nn.optimizers.WeightDecay object at 0x0000020B958FC2E0>
+  is_explicitly_specified: false
+  is_hyperparam: null
+  is_meta: null
+  name: weight_decay_obj
+  options:
+  - L2
+  order: 7
+  type: <class 'labml_nn.optimizers.WeightDecay'>
+  value: null
+optimizer.weight_decouple:
+  computed: true
+  is_explicitly_specified: false
+  is_hyperparam: null
+  is_meta: null
+  name: weight_decouple
+  options: []
+  order: 9
+  type: <class 'bool'>
+  value: null
+save_models_interval:
+  computed: 1
+  is_explicitly_specified: false
+  is_hyperparam: null
+  is_meta: true
+  name: save_models_interval
+  options: []
+  order: 29
+  type: <class 'int'>
+  value: null
+state_modules:
+  computed:
+  - <labml_helpers.metrics.accuracy.Accuracy object at 0x0000020B946AEAA0>
+  is_explicitly_specified: false
+  is_hyperparam: null
+  is_meta: null
+  name: state_modules
+  options: []
+  order: 15
+  type: typing.List[labml_helpers.metrics.StateModule]
+  value:
+  - <labml_helpers.metrics.accuracy.Accuracy object at 0x0000020B946AEAA0>
+train_batch_size:
+  computed: 256
+  is_explicitly_specified: true
+  is_hyperparam: null
+  is_meta: null
+  name: train_batch_size
+  options: []
+  order: 20
+  type: <class 'int'>
+  value: 256
+train_dataset:
+  computed: "Dataset CIFAR10\n    Number of datapoints: 50000\n    Root location:\
+    \ C:\\Users\\Jesse\\Documents\\RIT Class Folders\\Summer 2023\\CSCI 635\\Final\
+    \ Project\\GITHUB-fork-ver\\labml_nn\\resnet\\data\n    Split: Train\n    StandardTransform\n\
+    Transform: Compose(\n               RandomCrop(size=(32, 32), padding=4)\n   \
+    \            RandomHorizontalFlip(p=0.5)\n               ToTensor()\n        \
+    \       Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5))\n           )"
+  is_explicitly_specified: true
+  is_hyperparam: null
+  is_meta: null
+  name: train_dataset
+  options:
+  - mnist_train_dataset
+  - cifar10_train_dataset
+  - cifar10_train_augmented
+  order: 19
+  type: <class 'torchvision.datasets.mnist.MNIST'>
+  value: cifar10_train_augmented
+train_loader:
+  computed: <torch.utils.data.dataloader.DataLoader object at 0x0000020B946DB220>
+  is_explicitly_specified: false
+  is_hyperparam: null
+  is_meta: null
+  name: train_loader
+  options:
+  - mnist_train_loader
+  - cifar10_train_loader
+  order: 18
+  type: <class 'torch.utils.data.dataloader.DataLoader'>
+  value: null
+train_loader_shuffle:
+  computed: true
+  is_explicitly_specified: false
+  is_hyperparam: null
+  is_meta: null
+  name: train_loader_shuffle
+  options: []
+  order: 21
+  type: <class 'bool'>
+  value: null
+trainer:
+  computed: <labml_helpers.train_valid.Trainer object at 0x0000020B947F64D0>
+  is_explicitly_specified: false
+  is_hyperparam: null
+  is_meta: null
+  name: trainer
+  options:
+  - _default_trainer
+  order: 17
+  type: <class 'labml_helpers.train_valid.Trainer'>
+  value: null
+training_loop:
+  computed: LabTrainingLoop
+  is_explicitly_specified: false
+  is_hyperparam: null
+  is_meta: null
+  name: training_loop
+  options:
+  - _loop_configs
+  order: 22
+  type: <class 'labml_helpers.training_loop.TrainingLoop'>
+  value: null
+valid_batch_size:
+  computed: 1024
+  is_explicitly_specified: false
+  is_hyperparam: null
+  is_meta: null
+  name: valid_batch_size
+  options: []
+  order: 12
+  type: <class 'int'>
+  value: null
+valid_dataset:
+  computed: "Dataset CIFAR10\n    Number of datapoints: 10000\n    Root location:\
+    \ C:\\Users\\Jesse\\Documents\\RIT Class Folders\\Summer 2023\\CSCI 635\\Final\
+    \ Project\\GITHUB-fork-ver\\labml_nn\\resnet\\data\n    Split: Test\n    StandardTransform\n\
+    Transform: Compose(\n               ToTensor()\n               Normalize(mean=(0.5,\
+    \ 0.5, 0.5), std=(0.5, 0.5, 0.5))\n           )"
+  is_explicitly_specified: true
+  is_hyperparam: null
+  is_meta: null
+  name: valid_dataset
+  options:
+  - mnist_valid_dataset
+  - cifar10_valid_dataset
+  - cifar10_valid_no_augment
+  order: 11
+  type: <class 'torchvision.datasets.mnist.MNIST'>
+  value: cifar10_valid_no_augment
+valid_loader:
+  computed: <torch.utils.data.dataloader.DataLoader object at 0x0000020B958E4160>
+  is_explicitly_specified: false
+  is_hyperparam: null
+  is_meta: null
+  name: valid_loader
+  options:
+  - mnist_valid_loader
+  - cifar10_valid_loader
+  order: 9
+  type: <class 'torch.utils.data.dataloader.DataLoader'>
+  value: null
+valid_loader_shuffle:
+  computed: false
+  is_explicitly_specified: false
+  is_hyperparam: null
+  is_meta: null
+  name: valid_loader_shuffle
+  options: []
+  order: 13
+  type: <class 'bool'>
+  value: null
+validator:
+  computed: <labml_helpers.train_valid.Trainer object at 0x0000020B9588ABC0>
+  is_explicitly_specified: false
+  is_hyperparam: null
+  is_meta: null
+  name: validator
+  options:
+  - _default_validator
+  order: 8
+  type: <class 'labml_helpers.train_valid.Trainer'>
+  value: null
