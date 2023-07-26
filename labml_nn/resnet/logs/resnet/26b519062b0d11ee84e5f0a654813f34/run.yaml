@@ -1,0 +1,18 @@
+comment: cifar10
+commit: unknown
+commit_message: ''
+distributed_rank: 0
+distributed_world_size: 0
+is_dirty: false
+load_run: null
+name: resnet
+notes: ''
+python_file: C:\Users\Jesse\Documents\RIT Class Folders\Summer 2023\CSCI 635\Final
+  Project\GITHUB-fork-ver\labml_nn\resnet\experiment.py
+repo_remotes: []
+start_step: 0
+tags:
+- resnet
+trial_date: '2023-07-25'
+trial_time: '13:03:18'
+uuid: 26b519062b0d11ee84e5f0a654813f34
