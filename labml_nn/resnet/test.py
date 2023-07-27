@@ -50,7 +50,9 @@ def main():
                 _, predicted = torch.max(outputs.data, 1)
                 train_total += targets.size(0)
                 train_correct += (predicted == targets).sum().item()
-                tracker.save(epoch, {'loss.train': train_loss, 'accuracy.train': (train_correct / train_total)})
+                #tracker.save(epoch, {'loss.train': train_loss, 'accuracy.train': (train_correct / train_total)})
+                tracker.add("loss.", criterion(outputs, targets))
+                tracker.save()
 
             # Validate
             model.eval()
@@ -65,10 +67,12 @@ def main():
                     valid_correct += (predicted == targets).sum().item()
 
                     valid_loss = criterion(outputs, targets)
-                    tracker.save(epoch, {'loss.train': train_loss, 'accuracy.train': (train_correct / train_total),
-                                         'loss.valid': valid_loss, 'accuracy.valid': (valid_correct / valid_total)})
+
+                    #tracker.save()
+                    #tracker.save(epoch, {'loss.train': train_loss, 'accuracy.train': (train_correct / train_total),
+                    #                     'loss.valid': valid_loss, 'accuracy.valid': (valid_correct / valid_total)})
             #print(f'Epoch: {epoch + 1}/{epochs}, Accuracy: {(correct / total) * 100}%')
-            tracker.save()
+            tracker.new_line()
 
 if __name__ == '__main__':
     main()
