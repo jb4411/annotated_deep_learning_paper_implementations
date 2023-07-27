@@ -6,7 +6,8 @@ from labml import tracker, experiment
 
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
-
+tracker.set_scalar("loss.*", True)
+tracker.set_scalar("accuracy.*", True)
 
 def main():
     # Load the pretrained ResNet-101 model from torchvision
@@ -30,44 +31,44 @@ def main():
     model = model.to(device)  # send model to device (CPU or GPU)
 
     # Number of epochs
-    epochs = 5
+    epochs = 2
 
     with experiment.record(name='sample', token='http://localhost:5005/api/v1/track?'):
         for epoch in range(epochs):
             # Train
-            total = 0
-            correct = 0
+            train_total = 0
+            train_correct = 0
             model.train()
             for inputs, targets in train_loader:
                 inputs, targets = inputs.to(device), targets.to(device)  # send data to device
                 optimizer.zero_grad()
                 outputs = model(inputs)
-                loss = criterion(outputs, targets)
-                loss.backward()
+                train_loss = criterion(outputs, targets)
+                train_loss.backward()
                 optimizer.step()
 
                 _, predicted = torch.max(outputs.data, 1)
-                total += targets.size(0)
-                correct += (predicted == targets).sum().item()
-                tracker.save(epoch, {'loss': loss, 'accuracy': (correct / total)})
+                train_total += targets.size(0)
+                train_correct += (predicted == targets).sum().item()
+                tracker.save(epoch, {'loss.train': train_loss, 'accuracy.train': (train_correct / train_total)})
 
             # Validate
             model.eval()
-            total = 0
-            correct = 0
+            valid_total = 0
+            valid_correct = 0
             with torch.no_grad():
                 for inputs, targets in val_loader:
                     inputs, targets = inputs.to(device), targets.to(device)  # send data to device
                     outputs = model(inputs)
                     _, predicted = torch.max(outputs.data, 1)
-                    total += targets.size(0)
-                    correct += (predicted == targets).sum().item()
+                    valid_total += targets.size(0)
+                    valid_correct += (predicted == targets).sum().item()
 
-                    loss = criterion(outputs, targets)
-                    loss.backward()
-                    tracker.save(epoch, {'loss': loss, 'accuracy': (correct / total)})
+                    valid_loss = criterion(outputs, targets)
+                    tracker.save(epoch, {'loss.train': train_loss, 'accuracy.train': (train_correct / train_total),
+                                         'loss.valid': valid_loss, 'accuracy.valid': (valid_correct / valid_total)})
             #print(f'Epoch: {epoch + 1}/{epochs}, Accuracy: {(correct / total) * 100}%')
-
+            tracker.save()
 
 if __name__ == '__main__':
     main()
