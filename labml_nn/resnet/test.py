@@ -30,11 +30,13 @@ def main():
     model = model.to(device)  # send model to device (CPU or GPU)
 
     # Number of epochs
-    epochs = 20
+    epochs = 5
 
     with experiment.record(name='sample', token='http://localhost:5005/api/v1/track?'):
         for epoch in range(epochs):
             # Train
+            total = 0
+            correct = 0
             model.train()
             for inputs, targets in train_loader:
                 inputs, targets = inputs.to(device), targets.to(device)  # send data to device
@@ -43,6 +45,11 @@ def main():
                 loss = criterion(outputs, targets)
                 loss.backward()
                 optimizer.step()
+
+                _, predicted = torch.max(outputs.data, 1)
+                total += targets.size(0)
+                correct += (predicted == targets).sum().item()
+                tracker.save(epoch, {'loss': loss, 'accuracy': (correct / total)})
 
             # Validate
             model.eval()
@@ -55,8 +62,10 @@ def main():
                     _, predicted = torch.max(outputs.data, 1)
                     total += targets.size(0)
                     correct += (predicted == targets).sum().item()
-            f'Epoch: {epoch + 1}/{epochs}, Accuracy: {(correct / total) * 100}%'
-            tracker.save(epoch, {'loss': loss, 'accuracy': (correct / total) * 100})
+
+                    loss = criterion(outputs, targets)
+                    loss.backward()
+                    tracker.save(epoch, {'loss': loss, 'accuracy': (correct / total)})
             #print(f'Epoch: {epoch + 1}/{epochs}, Accuracy: {(correct / total) * 100}%')
 
 

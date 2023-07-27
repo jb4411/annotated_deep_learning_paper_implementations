@@ -57,6 +57,7 @@ def main():
     experiment.create(name='resnet', comment='cifar10')
     # Create configurations
     conf = Configs()
+
     # Load configurations
     experiment.configs(conf, {
         'n_blocks': [3, 4, 23, 3],
@@ -70,7 +71,7 @@ def main():
         'optimizer.momentum': 0.9,
 
         'epochs': 10,
-        'train_batch_size': 32,
+        'train_batch_size': 16,
 
         'train_dataset': 'cifar10_train_augmented',
         'valid_dataset': 'cifar10_valid_no_augment',
