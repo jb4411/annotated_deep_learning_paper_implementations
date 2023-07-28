@@ -3,6 +3,7 @@ from torchvision import datasets, transforms, models
 from torch import nn
 import torch.optim as optim
 from enum import Enum
+import wandb
 
 
 class DataSet(Enum):
@@ -44,6 +45,20 @@ def main():
 
     # Number of epochs
     num_epochs = 3
+
+    # start a new wandb run to track this script
+    wandb.init(
+        # set the wandb project where this run will be logged
+        project="csci635-final-project",
+
+        # track hyperparameters and run metadata
+        config={
+            "learning_rate": 0.02,
+            "architecture": "resnet",
+            "dataset": "CIFAR-100",
+            "epochs": num_epochs,
+        }
+    )
 
     # Training loop
     for epoch in range(num_epochs):

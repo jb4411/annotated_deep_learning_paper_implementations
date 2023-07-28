@@ -70,19 +70,19 @@ def main():
         'optimizer.weight_decay': 0.0001,
         'optimizer.momentum': 0.9,
 
-        'epochs': 10,
-        'train_batch_size': 16,
+        'epochs': 3,
+        'train_batch_size': 32,
 
         'train_dataset': 'cifar10_train_augmented',
         'valid_dataset': 'cifar10_valid_no_augment',
     })
 
     # Set model for saving/loading
-    experiment.add_pytorch_models({'model': conf.model})
+    #experiment.add_pytorch_models({'model': conf.model})
 
-    model = models.resnet101(pretrained=False)
-
-    #experiment.add_pytorch_models({'model': model})
+    #model = models.resnet101(pretrained=False)
+    model = models.resnet18(pretrained=True)
+    experiment.add_pytorch_models({'model': model})
 
     # Start the experiment and run the training loop
     with experiment.start():
