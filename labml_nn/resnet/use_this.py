@@ -1,4 +1,5 @@
 import math
+import time
 from enum import Enum
 
 import torch
@@ -39,8 +40,13 @@ def setup_dataset(dataset: DataSet, batch_size=32):
     return data_loaders
 
 
-def train_model(model, criterion, optimizer, num_epochs=10):
-    save_per_epoch = False
+def train_model(model, criterion, optimizer, num_epochs=10, save_per_epoch=False):
+    tracked_data = {
+        'loss.train': [],
+        'accuracy.train': [],
+        'loss.valid': [],
+        'accuracy.valid': []
+    }
 
     train_steps = 0
     valid_steps = 0
@@ -51,13 +57,14 @@ def train_model(model, criterion, optimizer, num_epochs=10):
     t_step = int(lcm / t_len)
     v_step = int(lcm / v_len)
 
-
     with experiment.record(name='sample', token='http://localhost:5005/api/v1/track?'):
         for epoch in range(num_epochs):
+            epoch_start = time.perf_counter()
             print(f"Epoch {epoch}/{num_epochs}")
             print('-' * 10)
 
             for phase in ['train', 'val']:
+                phase_start = time.perf_counter()
                 if phase == 'train':
                     model.train()
                 else:
@@ -88,11 +95,16 @@ def train_model(model, criterion, optimizer, num_epochs=10):
 
                     if save_per_epoch:
                         if phase == 'train':
-                            tracker.add('loss.train', running_loss / running_seen)
-                            tracker.add('accuracy.train', running_corrects / running_seen)
+                            train_loss = running_loss / running_seen
+                            train_acc = running_corrects / running_seen
+                            tracked_data['loss.train'].append(train_loss)
+                            tracked_data['accuracy.train'].append(train_acc)
+
                         else:
-                            tracker.add('loss.valid', running_loss / running_seen)
-                            tracker.add('accuracy.valid', running_corrects / running_seen)
+                            valid_loss = running_loss / running_seen
+                            valid_acc = running_corrects / running_seen
+                            tracked_data['loss.valid'].append(valid_loss)
+                            tracked_data['accuracy.valid'].append(valid_acc)
                     else:
                         if phase == 'train':
                             train_loss = running_loss / running_seen
@@ -105,19 +117,26 @@ def train_model(model, criterion, optimizer, num_epochs=10):
                             tracker.save(valid_steps, {'loss.valid': valid_loss, 'accuracy.valid': valid_acc})
                             valid_steps += v_step
 
-                epoch_loss = running_loss / len(data_loaders[phase].dataset)
-                epoch_acc = running_corrects / len(data_loaders[phase].dataset)
                 if save_per_epoch:
                     if phase == 'train':
-                        train_loss = epoch_loss
-                        train_acc = epoch_acc
-                        tracker.save(epoch, {'loss.train': train_loss, 'accuracy.train': train_acc})
+                        for i in range(len(data_loaders['train'])):
+                            tracker.save(train_steps, {'loss.train': tracked_data['loss.train'][i],
+                                                       'accuracy.train': tracked_data['accuracy.train'][i]})
+                            train_steps += t_step
                     else:
-                        valid_loss = epoch_loss
-                        valid_acc = epoch_acc
-                        tracker.save(epoch, {'loss.train': train_loss, 'accuracy.train': train_acc,
-                                             'loss.valid': valid_loss, 'accuracy.valid': valid_acc})
+                        for i in range(len(data_loaders['val'])):
+                            tracker.save(train_steps, {'loss.valid': tracked_data['loss.valid'][i],
+                                                       'accuracy.valid': tracked_data['accuracy.valid'][i]})
+                            valid_steps += v_step
 
+                phase_end = time.perf_counter()
+                if phase == 'train':
+                    tracker.save(train_steps - t_step, {'train.time': phase_end - phase_start})
+                else:
+                    tracker.save(valid_steps - v_step, {'valid.time': phase_end - phase_start})
+
+            epoch_end = time.perf_counter()
+            tracker.save(train_steps - t_step, {'Epoch time': epoch_end - epoch_start})
             tracker.new_line()
 
     print('Training complete')
@@ -133,6 +152,9 @@ def main():
     # Optimizer momentum
     momentum = 0.9
 
+    # metric save method
+    save_per_epoch = False
+
     # model
     model = models.resnet18(pretrained=False, num_classes=10)
     model = model.to(device)
@@ -144,7 +166,10 @@ def main():
     # Load dataset
     setup_dataset(DataSet.STL10, batch_size)
 
-    train_model(model, criterion, optimizer, num_epochs=num_epochs)
+    start = time.perf_counter()
+    train_model(model, criterion, optimizer, num_epochs=num_epochs, save_per_epoch=save_per_epoch)
+    end = time.perf_counter()
+    print(f"Training took {end-start}ms")
 
 
 if __name__ == '__main__':
