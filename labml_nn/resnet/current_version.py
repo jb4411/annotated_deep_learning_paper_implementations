@@ -47,6 +47,7 @@ global v_step
 global t_count
 global v_count
 exp_conf: dict
+train_log_interval = 10
 
 
 def setup_dataset(dataset: DataSet, train_batch_size=32, valid_batch_size=1024):
@@ -235,7 +236,7 @@ def train_model(model, criterion, optimizer, num_epochs=10, save_per_epoch=False
                 running_corrects = 0
                 running_seen = 0
 
-                for inputs, labels in monit.iterate(text, data_loaders[phase]):
+                for batch_idx, (inputs, labels) in monit.enum(text, data_loaders[phase]):
                     inputs = inputs.to(device)
                     labels = labels.to(device)
 
@@ -253,41 +254,16 @@ def train_model(model, criterion, optimizer, num_epochs=10, save_per_epoch=False
                     running_loss += loss.item() * inputs.size(0)
                     running_corrects += torch.sum(preds == labels.data)
                     running_seen += len(labels.data)
-                    if save_per_epoch:
-                        if phase == Phase.TRAIN:
-                            train_loss = running_loss / running_seen
-                            train_acc = running_corrects / running_seen
-                            tracked_data['loss.train'].append(train_loss)
-                            tracked_data['accuracy.train'].append(train_acc)
 
-                        else:
-                            valid_loss = running_loss / running_seen
-                            valid_acc = running_corrects / running_seen
-                            tracked_data['loss.valid'].append(valid_loss)
-                            tracked_data['accuracy.valid'].append(valid_acc)
-                    else:
-                        if phase == Phase.TRAIN:
-                            train_loss = running_loss / running_seen
-                            train_acc = running_corrects / running_seen
-                            tracker.save(inc(phase, epoch), {'loss.train': train_loss, 'accuracy.train': train_acc})
-                        else:
-                            valid_loss = running_loss / running_seen
-                            valid_acc = running_corrects / running_seen
-                            tracker.save(inc(phase, epoch), {'loss.valid': valid_loss, 'accuracy.valid': valid_acc})
-
-                if save_per_epoch:
                     if phase == Phase.TRAIN:
-                        for i in range(len(tracked_data['loss.train'])):
-                            tracker.save(inc(phase, epoch), {'loss.train': tracked_data['loss.train'][i],
-                                                             'accuracy.train': tracked_data['accuracy.train'][i]})
-                        tracked_data['loss.train'] = []
-                        tracked_data['accuracy.train'] = []
+                        # Increment the global step
+                        tracker.add_global_step()
+                        # Store stats in the tracker
+                        tracker.add({'loss.train': loss, 'accuracy.train': running_corrects/running_seen})
+                        if batch_idx % train_log_interval == 0:
+                            tracker.save()
                     else:
-                        for i in range(len(tracked_data['loss.valid'])):
-                            tracker.save(inc(phase, epoch), {'loss.valid': tracked_data['loss.valid'][i],
-                                                             'accuracy.valid': tracked_data['accuracy.valid'][i]})
-                        tracked_data['loss.valid'] = []
-                        tracked_data['accuracy.valid'] = []
+                        tracker.save({'loss.valid': running_loss, 'accuracy.valid': running_corrects/running_seen})
 
             tracker.new_line()
 
