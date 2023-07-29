@@ -3,9 +3,11 @@ import time
 from enum import Enum
 
 import torch
+from torch.nn.modules.loss import _WeightedLoss, _Loss
 from torchvision import datasets, models, transforms
 import torch.nn as nn
-import torch.optim as optim
+from torch import optim
+from torch.optim import Optimizer
 from labml import tracker, experiment, monit
 from torchvision.models import ResNet
 from torchvision.models.resnet import BasicBlock, Bottleneck, _resnet
@@ -209,16 +211,49 @@ def setup_steps():
         return inc
 
 
+class Trainer:
+    # Name of this run
+    run_name: str
+    # Model
+    model: ResNet
+    # Number of layers in the ResNet model
+    num_layers: int
+    # Type of block used in the ResNet model
+    block_type: Type[Union[BasicBlock, Bottleneck, None]] = None
+    # Number of epochs to run for
+    num_epochs: int = 10
+    # Train dataset
+    train_data: DataSet
+    # Train batch size
+    train_batch_size: int = 32
+    # Valid dataset
+    val_data: DataSet
+    # Valid batch size
+    valid_batch_size: int = 128
+    # Loss function
+    criterion: _Loss
+    # Optimizer
+    optimizer: Optimizer
+    # Optimizer Learning rate
+    lr = 0.001
+    # Optimizer momentum
+    momentum = 0.9
+    # Optimizer weight_decay
+    weight_decay = 0.0001
+    # interval at which training results should be logged
+    train_log_interval: int = 10
+    # device to run on
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    # internal
+    _data_loaders: dict
+    _conf: dict
+
+    def __init__(self, config: dict = None):
+        pass
+
+
+
 def train_model(model, criterion, optimizer, num_epochs=10, save_per_epoch=False, name="sample"):
-    tracked_data = {
-        'loss.train': [],
-        'accuracy.train': [],
-        'loss.valid': [],
-        'accuracy.valid': []
-    }
-
-    inc = setup_steps()
-
     with experiment.record(name=name, token='http://localhost:5005/api/v1/track?'):
         for epoch in monit.loop(range(num_epochs)):
             # print(f"Epoch {epoch}/{num_epochs}")
@@ -232,7 +267,6 @@ def train_model(model, criterion, optimizer, num_epochs=10, save_per_epoch=False
                     text = "Valid"
                     model.eval()
 
-                running_loss = 0.0
                 running_corrects = 0
                 running_seen = 0
 
@@ -251,7 +285,6 @@ def train_model(model, criterion, optimizer, num_epochs=10, save_per_epoch=False
                             loss.backward()
                             optimizer.step()
 
-                    #running_loss += loss.item() * inputs.size(0)
                     running_corrects += torch.sum(preds == labels.data)
                     running_seen += len(labels.data)
 
