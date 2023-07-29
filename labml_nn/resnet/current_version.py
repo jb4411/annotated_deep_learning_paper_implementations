@@ -13,10 +13,6 @@ from torchvision.models import ResNet
 from torchvision.models.resnet import BasicBlock, Bottleneck, _resnet
 from typing import List, Any, Type, Union
 
-tracker.set_scalar("loss.*", True)
-tracker.set_scalar("accuracy.*", True)
-
-
 class DataSet(Enum):
     CIFAR10 = 1
     STL10 = 2
@@ -34,33 +30,7 @@ class Phase(Enum):
     VALID = 2
 
 
-# Set device
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-global data_loaders
-global train_data
-global val_data
-global train_batch
-global valid_batch
-step_type: StepType = StepType.PERF_DATA_STEP
-global train_steps
-global valid_steps
-global t_step
-global v_step
-global t_count
-global v_count
-exp_conf: dict
-train_log_interval = 10
-
-
-def setup_dataset(dataset: DataSet, train_batch_size=32, valid_batch_size=1024):
-    global train_batch
-    global valid_batch
-    train_batch = train_batch_size
-    valid_batch = valid_batch_size
-
-    global data_loaders
-    global train_data
-    global val_data
+def setup_dataset(dataset: DataSet, train_batch_size, valid_batch_size):
     if dataset == DataSet.CIFAR10:
         train_data = datasets.CIFAR10('./data', train=True, download=True,
                                       transform=transforms.Compose([
@@ -102,115 +72,6 @@ def setup_dataset(dataset: DataSet, train_batch_size=32, valid_batch_size=1024):
     return data_loaders
 
 
-def setup_steps():
-    global train_steps
-    global valid_steps
-    global t_step
-    global v_step
-
-    train_steps = 0
-    valid_steps = 0
-    if step_type == StepType.PERF_STEP:
-        t_len = len(data_loaders[Phase.TRAIN])
-        v_len = len(data_loaders[Phase.VALID])
-        lcm = math.lcm(t_len, v_len)
-        t_step = int(lcm / t_len)
-        v_step = int(lcm / v_len)
-
-        def inc(phase: Phase, epoch):
-            global train_steps
-            global valid_steps
-            if phase == Phase.TRAIN:
-                train_steps += t_step
-                return train_steps
-            else:
-                valid_steps += v_step
-                return valid_steps
-
-        return inc
-    elif step_type == StepType.APPROX_STEP:
-        t_len = len(data_loaders[Phase.TRAIN])
-        v_len = len(data_loaders[Phase.VALID])
-        if t_len > v_len:
-            t_step = 1
-            v_step = t_len / v_len
-        else:
-            t_step = v_len / t_len
-            v_step = 1
-
-        def inc(phase: Phase, epoch):
-            global train_steps
-            global valid_steps
-            if phase == Phase.TRAIN:
-                train_steps += t_step
-                return int(train_steps)
-            else:
-                valid_steps += v_step
-                return int(valid_steps)
-
-        return inc
-    elif step_type == StepType.APPROX_DATA_STEP:
-        t_len = len(train_data)
-        v_len = len(val_data)
-        if t_len > v_len:
-            t_step = train_batch
-            v_step = valid_batch * (t_len / v_len)
-        else:
-            t_step = train_batch * (v_len / t_len)
-            v_step = valid_batch
-
-        def inc(phase: Phase, epoch):
-            global train_steps
-            global valid_steps
-            if phase == Phase.TRAIN:
-                train_steps += t_step
-                return int(train_steps)
-            else:
-                valid_steps += v_step
-                return int(valid_steps)
-
-        return inc
-    elif step_type == StepType.PERF_DATA_STEP:
-        t_len = len(train_data)
-        v_len = len(val_data)
-        target = max(t_len, v_len)
-        if t_len > v_len:
-            t_step = train_batch
-            v_step = valid_batch * (t_len / v_len)
-        else:
-            t_step = train_batch * (v_len / t_len)
-            v_step = valid_batch
-        global t_count
-        global v_count
-        t_count = 0
-        v_count = 0
-        t_batch = len(data_loaders[Phase.TRAIN])
-        v_batch = len(data_loaders[Phase.VALID])
-
-        def inc(phase: Phase, epoch):
-            global train_steps
-            global valid_steps
-            global t_count
-            global v_count
-
-            if phase == Phase.TRAIN:
-                t_count += 1
-                train_steps += t_step
-                if t_count >= t_batch:
-                    t_count = 0
-                    train_steps = target * (epoch + 1)
-                return int(train_steps)
-            else:
-                v_count += 1
-                valid_steps += v_step
-                if v_count >= v_batch:
-                    v_count = 0
-                    valid_steps = target * (epoch + 1)
-                return int(valid_steps)
-
-        return inc
-
-
 class Trainer:
     # Name of this run
     run_name: str
@@ -220,8 +81,6 @@ class Trainer:
     num_layers: int
     # Type of block used in the ResNet model
     block_type: Type[Union[BasicBlock, Bottleneck, None]] = None
-    # Number of epochs to run for
-    num_epochs: int = 10
     # Train dataset
     train_data: DataSet
     # Train batch size
@@ -247,10 +106,51 @@ class Trainer:
     # internal
     _data_loaders: dict
     _conf: dict
+    _train_corrects: int
+    _train_seen: int
+    _valid_corrects: int
+    _valid_seen: int
 
     def __init__(self, config: dict = None):
+        tracker.set_scalar("loss.*", True)
+        tracker.set_scalar("accuracy.*", True)
+
+    def train_model(self, num_epochs: int = 10):
+        """
+        Arguments:
+            num_epochs (int): number of epochs to run for
+        """
         pass
 
+    def step(self, inputs, labels, batch_idx, phase):
+        inputs = inputs.to(self.device)
+        labels = labels.to(self.device)
+
+        self.optimizer.zero_grad()
+
+        with torch.set_grad_enabled(phase == Phase.TRAIN):
+            outputs = self.model(inputs)
+            _, preds = torch.max(outputs, 1)
+            loss = self.criterion(outputs, labels)
+
+            if phase == Phase.TRAIN:
+                loss.backward()
+                self.optimizer.step()
+
+        if phase == Phase.TRAIN:
+            self._train_corrects += torch.sum(preds == labels.data)
+            self._train_seen += len(labels.data)
+            # Increment the global step
+            tracker.add_global_step(len(labels.data))
+            # Store stats in the tracker
+            tracker.add({'loss.train': loss, 'accuracy.train': self._train_corrects / self._train_seen})
+            if batch_idx % self.train_log_interval == 0:
+                tracker.save()
+        else:
+            self._valid_corrects += torch.sum(preds == labels.data)
+            self._valid_seen += len(labels.data)
+            tracker.add({'loss.valid': loss, 'accuracy.valid': self._valid_corrects / self._valid_seen})
+            tracker.save()
 
 
 def train_model(model, criterion, optimizer, num_epochs=10, save_per_epoch=False, name="sample"):
