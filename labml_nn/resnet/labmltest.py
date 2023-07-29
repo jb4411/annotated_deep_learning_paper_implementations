@@ -2,7 +2,6 @@ from enum import Enum
 
 import torch
 from torchvision import datasets, models, transforms
-from torch.utils.tensorboard import SummaryWriter
 import torch.nn as nn
 import torch.optim as optim
 from labml import tracker, experiment
@@ -47,70 +46,67 @@ def UNUSED_get_model():
 
 
 def train_model(model, criterion, optimizer, num_epochs=10):
-    writer = SummaryWriter()
     steps = 0
-    for epoch in range(num_epochs):
-        print(f"Epoch {epoch}/{num_epochs}")
-        print('-' * 10)
+    with experiment.record(name='sample', token='http://localhost:5005/api/v1/track?'):
+        for epoch in range(num_epochs):
+            print(f"Epoch {epoch}/{num_epochs}")
+            print('-' * 10)
 
-        for phase in ['train', 'val']:
-            if phase == 'train':
-                model.train()
-            else:
-                model.eval()
+            train_loss = 0
+            valid_loss = 0
+            train_acc = 0
+            valid_acc = 0
 
-            running_loss = 0.0
-            running_corrects = 0
-            running_seen = 0
+            for phase in ['train', 'val']:
+                if phase == 'train':
+                    model.train()
+                else:
+                    model.eval()
 
-            for inputs, labels in data_loaders[phase]:
-                inputs = inputs.to(device)
-                labels = labels.to(device)
+                running_loss = 0.0
+                running_corrects = 0
+                running_seen = 0
 
-                optimizer.zero_grad()
+                for inputs, labels in data_loaders[phase]:
+                    inputs = inputs.to(device)
+                    labels = labels.to(device)
 
-                with torch.set_grad_enabled(phase == 'train'):
-                    outputs = model(inputs)
-                    _, preds = torch.max(outputs, 1)
-                    loss = criterion(outputs, labels)
+                    optimizer.zero_grad()
+
+                    with torch.set_grad_enabled(phase == 'train'):
+                        outputs = model(inputs)
+                        _, preds = torch.max(outputs, 1)
+                        loss = criterion(outputs, labels)
+
+                        if phase == 'train':
+                            loss.backward()
+                            optimizer.step()
+
+                    running_loss += loss.item() * inputs.size(0)
+                    running_corrects += torch.sum(preds == labels.data)
+                    running_seen += len(labels.data)
 
                     if phase == 'train':
-                        loss.backward()
-                        optimizer.step()
+                        tracker.add('loss.train', running_loss)
+                        tracker.add('accuracy.train', running_corrects/running_seen)
+                    else:
+                        tracker.add('loss.valid', running_loss)
+                        tracker.add('accuracy.valid', running_corrects / running_seen)
+                    steps += 1
 
-                running_loss += loss.item() * inputs.size(0)
-                running_corrects += torch.sum(preds == labels.data)
-                running_seen += len(labels.data)
-
-
-                # write to tensorboard
+                epoch_loss = running_loss / len(data_loaders[phase].dataset)
+                epoch_acc = running_corrects / len(data_loaders[phase].dataset)
                 if phase == 'train':
-                    tracker.add('loss.train', running_loss)
-                    tracker.add('accuracy.train', running_corrects/running_seen)
+                    train_loss = epoch_loss
+                    train_acc = epoch_acc
+                    tracker.save(epoch, {'loss.train': train_loss, 'accuracy.train': train_acc})
                 else:
-                    tracker.add('loss.valid', running_loss)
-                    tracker.add('accuracy.valid', running_corrects / running_seen)
-                steps += 1
+                    valid_loss = epoch_loss
+                    valid_acc = epoch_acc
+                    tracker.save(epoch, {'loss.train': epoch_loss, 'accuracy.train': epoch_acc,
+                                         'loss.valid': valid_loss, 'accuracy.valid': valid_acc})
 
-            epoch_loss = running_loss / len(data_loaders[phase].dataset)
-            epoch_acc = running_corrects / len(data_loaders[phase].dataset)
-
-
-            tracker.save(epoch, {'loss.train': epoch_loss, 'accuracy.train': epoch_acc,
-                                                      'loss.valid': valid_loss, 'accuracy.valid': (valid_correct / valid_total)})
-
-
-            print(f"{phase} Loss: {epoch_loss:.4f} Acc: {epoch_acc:.4f}")
-
-            """# write to tensorboard
-            if phase == 'train':
-                writer.add_scalar('training loss', epoch_loss, epoch)
-                writer.add_scalar('training accuracy', epoch_acc, epoch)
-            else:
-                writer.add_scalar('validation loss', epoch_loss, epoch)
-                writer.add_scalar('validation accuracy', epoch_acc, epoch)"""
-
-        tracker.new_line()
+            tracker.new_line()
 
     print('Training complete')
 
