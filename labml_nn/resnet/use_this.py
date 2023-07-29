@@ -244,13 +244,17 @@ def train_model(model, criterion, optimizer, num_epochs=10, save_per_epoch=False
 
                 if save_per_epoch:
                     if phase == Phase.TRAIN:
-                        for i in range(len(data_loaders[Phase.TRAIN])):
+                        for i in range(len(tracked_data['loss.train'])):
                             tracker.save(inc(phase, epoch), {'loss.train': tracked_data['loss.train'][i],
                                                              'accuracy.train': tracked_data['accuracy.train'][i]})
+                        tracked_data['loss.train'] = []
+                        tracked_data['accuracy.train'] = []
                     else:
-                        for i in range(len(data_loaders[Phase.VALID])):
+                        for i in range(len(tracked_data['loss.valid'])):
                             tracker.save(inc(phase, epoch), {'loss.valid': tracked_data['loss.valid'][i],
                                                              'accuracy.valid': tracked_data['accuracy.valid'][i]})
+                        tracked_data['loss.valid'] = []
+                        tracked_data['accuracy.valid'] = []
 
             tracker.new_line()
 
@@ -268,13 +272,13 @@ def main():
     momentum = 0.9
 
     # metric save method
-    save_per_epoch = False
+    save_per_epoch = True
     # Metric step type
     global step_type
     step_type = StepType.PERF_DATA_STEP
 
     # model
-    model = models.resnet50(pretrained=False, num_classes=10)
+    model = models.resnet152(pretrained=False, num_classes=10)
     model = model.to(device)
 
     # Define loss and optimizer
