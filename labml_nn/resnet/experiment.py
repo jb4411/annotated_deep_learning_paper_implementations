@@ -7,6 +7,7 @@ summary: >
 
 # Train a [ResNet](index.html) on CIFAR 10
 """
+from enum import Enum
 from typing import List, Optional
 
 from torch import nn
@@ -16,7 +17,8 @@ from labml.configs import option
 from labml_nn.experiments.cifar10 import CIFAR10Configs
 from labml_nn.resnet import ResNetBase
 from torchvision import models
-
+from stl10 import STL10Configs
+from labml_nn.experiments.mnist import MNISTConfigs
 
 class Configs(CIFAR10Configs):
     """
@@ -26,7 +28,25 @@ class Configs(CIFAR10Configs):
     dataset related configurations, optimizer, and a training loop.
     """
 
-    # Number fo blocks for each feature map size
+    # Number of blocks for each feature map size
+    n_blocks: List[int] = [3, 3, 3]
+    # Number of channels for each feature map size
+    n_channels: List[int] = [16, 32, 64]
+    # Bottleneck sizes
+    bottlenecks: Optional[List[int]] = None
+    # Kernel size of the initial convolution layer
+    first_kernel_size: int = 3
+
+
+class STLConfigs(Configs):
+    """
+    ## Configurations
+
+    We use `STL10Configs` which defines all the
+    dataset related configurations, optimizer, and a training loop.
+    """
+    dataset_name: str = 'STL10'
+    # Number of blocks for each feature map size
     n_blocks: List[int] = [3, 3, 3]
     # Number of channels for each feature map size
     n_channels: List[int] = [16, 32, 64]
@@ -52,17 +72,31 @@ def _resnet(c: Configs):
     return model.to(c.device)
 
 
+class Dataset(Enum):
+    CIFAR10 = 1
+    STL10 = 2
+
+
 def main():
+    dataset: Dataset
+    dataset = Dataset.STL10
+
     # Create experiment
-    experiment.create(name='resnet', comment='cifar10')
+    experiment.create(name='resnet', comment=f"{dataset}")
+
     # Create configurations
-    conf = Configs()
+    if dataset == Dataset.CIFAR10:
+        train_dataset = "cifar10_train_augmented"
+        valid_dataset = "cifar10_valid_no_augment"
+        conf = Configs()
+    else:
+        train_dataset = "stl10_train_dataset"
+        valid_dataset = "stl10_valid_dataset"
+        conf = STLConfigs()
 
     # Load configurations
     experiment.configs(conf, {
-        'n_blocks': [3, 4, 23, 3],
-        'n_channels': [64, 128, 256, 512],
-        'bottlenecks': [64, 128, 256, 512],
+        'n_blocks': [200, 200, 200],
         'first_kernel_size': 7,
 
         'optimizer.optimizer': 'SGD',
@@ -73,16 +107,16 @@ def main():
         'epochs': 3,
         'train_batch_size': 32,
 
-        'train_dataset': 'cifar10_train_augmented',
-        'valid_dataset': 'cifar10_valid_no_augment',
+        'train_dataset': train_dataset,
+        'valid_dataset': valid_dataset,
     })
 
     # Set model for saving/loading
-    #experiment.add_pytorch_models({'model': conf.model})
+    experiment.add_pytorch_models({'model': conf.model})
 
     #model = models.resnet101(pretrained=False)
-    model = models.resnet18(pretrained=True)
-    experiment.add_pytorch_models({'model': model})
+    #model = models.resnet18(pretrained=True)
+    #experiment.add_pytorch_models({'model': model})
 
     # Start the experiment and run the training loop
     with experiment.start():
