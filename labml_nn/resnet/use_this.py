@@ -45,6 +45,7 @@ global t_step
 global v_step
 global t_count
 global v_count
+exp_conf: dict
 
 
 def setup_dataset(dataset: DataSet, batch_size=32):
@@ -312,17 +313,18 @@ def calculate_total_layers(layers: List[int], block: Type[Union[BasicBlock, Bott
     return total_layers
 
 
-def get_model(num_layers, num_classes=10, block_type: Type[Union[BasicBlock, Bottleneck]] = None,
-              **kwargs: Any) -> ResNet:
+def get_model(num_layers, block_type: Type[Union[BasicBlock, Bottleneck]] = None,
+              **kwargs: Any) -> (ResNet, List[int], Type[Union[BasicBlock, Bottleneck]]):
     if num_layers in [18, 34, 50, 101, 152]:
         pre_defined = {
-            18: models.resnet18,
-            34: models.resnet34,
-            50: models.resnet50,
-            101: models.resnet101,
-            152: models.resnet152
+            18: (models.resnet18, [2, 2, 2, 2], BasicBlock),
+            34: (models.resnet34, [3, 4, 6, 3], BasicBlock),
+            50: (models.resnet50, [3, 4, 6, 3], Bottleneck),
+            101: (models.resnet101, [3, 4, 23, 3], Bottleneck),
+            152: (models.resnet152, [3, 8, 36, 3], Bottleneck)
         }
-        model = pre_defined[num_layers](num_classes=num_classes, **kwargs)
+        model, layers, block_type = pre_defined[num_layers]
+        model = model(**kwargs)
     else:
         if block_type is None:
             if num_layers < 50:
@@ -336,7 +338,6 @@ def get_model(num_layers, num_classes=10, block_type: Type[Union[BasicBlock, Bot
                 block_layers = 2
             else:
                 block_layers = 3
-
         target = num_layers - 3
         offset = target % block_layers
         target += block_layers - offset
@@ -351,21 +352,24 @@ def get_model(num_layers, num_classes=10, block_type: Type[Union[BasicBlock, Bot
         actual = calculate_total_layers(layers, block_type)
         if num_layers != actual:
             print(f"Target = {num_layers} layers, actual = {actual} layers.")
-        model = generate_resnet(layers, num_classes=num_classes, block_type=block_type, **kwargs)
+        model = generate_resnet(layers, block_type=block_type, **kwargs)
 
     model = model.to(device)
-    return model
+    return model, layers, block_type
 
 
 def main():
-    # Number of layers for the resnet model
-    num_layers = 50
+    # Number of epochs
+    num_epochs = 20
     # Dataset
     dataset: DataSet = DataSet.CIFAR10
+    # Number of layers for the resnet model
+    num_layers = 50
+
+    # Block type
+    block_type: Type[Union[BasicBlock, Bottleneck, None]] = None
     # Batch size
     batch_size = 32
-    # Number of epochs
-    num_epochs = 5
     # Learning rate
     lr = 0.01
     # Optimizer momentum
@@ -378,7 +382,7 @@ def main():
     step_type = StepType.PERF_DATA_STEP
 
     # model
-    model = get_model(num_layers)
+    model, layers, block_type = get_model(num_layers, block_type)
 
     # Define loss and optimizer
     criterion = nn.CrossEntropyLoss()
@@ -387,9 +391,29 @@ def main():
     # Load dataset
     setup_dataset(dataset, batch_size)
 
+    # create exp_conf
+    global exp_conf
+    exp_conf = {
+        "bottlenecks": None if block_type == BasicBlock else [64, 128, 256, 512],
+        "dataset_name": dataset,
+
+
+        "num_epochs": num_epochs,
+        "dataset": dataset,
+        "num_layers": num_layers,
+        "batch_size": batch_size,
+        "lr": lr,
+        "momentum": momentum,
+        "save_per_epoch": save_per_epoch,
+        "step_type": step_type,
+        "model": model,
+        "criterion": criterion,
+        "optimizer": optimizer
+    }
+
     start = time.perf_counter()
     train_model(model, criterion, optimizer, num_epochs=num_epochs, save_per_epoch=save_per_epoch,
-                name=f"ResNet - {dataset}")
+                name=f"ResNet{num_layers} - {dataset}")
     end = time.perf_counter()
     print(f"Training took {end - start}")
 
