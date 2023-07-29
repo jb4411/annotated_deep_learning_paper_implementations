@@ -37,7 +37,8 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 global data_loaders
 global train_data
 global val_data
-global batch_len
+global train_batch
+global valid_batch
 step_type: StepType = StepType.PERF_DATA_STEP
 global train_steps
 global valid_steps
@@ -48,23 +49,51 @@ global v_count
 exp_conf: dict
 
 
-def setup_dataset(dataset: DataSet, batch_size=32):
-    global batch_len
-    batch_len = batch_size
+def setup_dataset(dataset: DataSet, train_batch_size=32, valid_batch_size=1024):
+    global train_batch
+    global valid_batch
+    train_batch = train_batch_size
+    valid_batch = valid_batch_size
+
     global data_loaders
     global train_data
     global val_data
     if dataset == DataSet.CIFAR10:
-        train_data = datasets.CIFAR10('./data', train=True, download=True, transform=transforms.ToTensor())
-        val_data = datasets.CIFAR10('./data', train=False, download=True, transform=transforms.ToTensor())
+        train_data = datasets.CIFAR10('./data', train=True, download=True,
+                                      transform=transforms.Compose([
+                                          # Pad and crop
+                                          transforms.RandomCrop(32, padding=4),
+                                          # Random horizontal flip
+                                          transforms.RandomHorizontalFlip(),
+                                          #
+                                          transforms.ToTensor(),
+                                          transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+                                      ]))
+        val_data = datasets.CIFAR10('./data', train=False, download=True,
+                                    transform=transforms.Compose([
+                                        transforms.ToTensor(),
+                                        transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+                                    ]))
     elif dataset == DataSet.STL10:
-        train_data = datasets.STL10('./data', split="train", download=True, transform=transforms.ToTensor())
-        val_data = datasets.STL10('./data', split="test", download=True, transform=transforms.ToTensor())
+        train_data = datasets.STL10('./data', split="train", download=True,
+                                    transform=transforms.Compose([
+                                        # Pad and crop
+                                        transforms.RandomCrop(96, padding=4),
+                                        # Random horizontal flip
+                                        transforms.RandomHorizontalFlip(),
+                                        transforms.ToTensor(),
+                                        transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+                                    ]))
+        val_data = datasets.STL10('./data', split="test", download=True,
+                                  transform=transforms.Compose([
+                                      transforms.ToTensor(),
+                                      transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+                                  ]))
 
     # Training and validation data loaders
     data_loaders = {
-        Phase.TRAIN: torch.utils.data.DataLoader(train_data, batch_size=batch_size, shuffle=True),
-        Phase.VALID: torch.utils.data.DataLoader(val_data, batch_size=batch_size, shuffle=False)
+        Phase.TRAIN: torch.utils.data.DataLoader(train_data, batch_size=train_batch_size, shuffle=True),
+        Phase.VALID: torch.utils.data.DataLoader(val_data, batch_size=valid_batch_size, shuffle=False)
     }
 
     return data_loaders
@@ -121,11 +150,11 @@ def setup_steps():
         t_len = len(train_data)
         v_len = len(val_data)
         if t_len > v_len:
-            t_step = batch_len
-            v_step = batch_len * (t_len / v_len)
+            t_step = train_batch
+            v_step = valid_batch * (t_len / v_len)
         else:
-            t_step = batch_len * (v_len / t_len)
-            v_step = batch_len
+            t_step = train_batch * (v_len / t_len)
+            v_step = valid_batch
 
         def inc(phase: Phase, epoch):
             global train_steps
@@ -143,11 +172,11 @@ def setup_steps():
         v_len = len(val_data)
         target = max(t_len, v_len)
         if t_len > v_len:
-            t_step = batch_len
-            v_step = batch_len * (t_len / v_len)
+            t_step = train_batch
+            v_step = valid_batch * (t_len / v_len)
         else:
-            t_step = batch_len * (v_len / t_len)
-            v_step = batch_len
+            t_step = train_batch * (v_len / t_len)
+            v_step = valid_batch
         global t_count
         global v_count
         t_count = 0
@@ -283,7 +312,7 @@ def generate_resnet(layers: List[int], num_classes: int = 10, block_type: Type[U
         block = block_type
 
     # Create the ResNet model
-    model = _resnet(block, layers, num_classes=num_classes, **kwargs)
+    model = _resnet(block, layers, weights=None, num_classes=num_classes, **kwargs)
 
     return model
 
@@ -324,7 +353,7 @@ def get_model(num_layers, block_type: Type[Union[BasicBlock, Bottleneck]] = None
             152: (models.resnet152, [3, 8, 36, 3], Bottleneck)
         }
         model, layers, block_type = pre_defined[num_layers]
-        model = model(**kwargs)
+        model = model(weights=None, **kwargs)
     else:
         if block_type is None:
             if num_layers < 50:
@@ -360,36 +389,40 @@ def get_model(num_layers, block_type: Type[Union[BasicBlock, Bottleneck]] = None
 
 def main():
     # Number of epochs
-    num_epochs = 20
+    num_epochs = 10
     # Dataset
     dataset: DataSet = DataSet.CIFAR10
     # Number of layers for the resnet model
-    num_layers = 50
+    num_layers = 101
 
     # Block type
     block_type: Type[Union[BasicBlock, Bottleneck, None]] = None
-    # Batch size
-    batch_size = 32
-    # Learning rate
-    lr = 0.01
+    # Training batch size
+    train_batch_size = 32
+    # Valid batch size
+    valid_batch_size = 1024
+    # Optimizer Learning rate
+    lr = 0.001
     # Optimizer momentum
     momentum = 0.9
+    # Optimizer weight_decay
+    weight_decay = 0.0001
 
     # metric save method
-    save_per_epoch = False
+    save_per_epoch = True
     # Metric step type
     global step_type
-    step_type = StepType.PERF_DATA_STEP
+    step_type = StepType.PERF_STEP
 
     # model
     model, layers, block_type = get_model(num_layers, block_type)
 
     # Define loss and optimizer
     criterion = nn.CrossEntropyLoss()
-    optimizer = optim.SGD(model.parameters(), lr=lr, momentum=momentum)
+    optimizer = optim.SGD(model.parameters(), lr=lr, momentum=momentum, weight_decay=weight_decay)
 
     # Load dataset
-    setup_dataset(dataset, batch_size)
+    setup_dataset(dataset, train_batch_size, valid_batch_size)
 
     # create exp_conf
     global exp_conf
@@ -397,11 +430,11 @@ def main():
         "bottlenecks": None if block_type == BasicBlock else [64, 128, 256, 512],
         "dataset_name": dataset,
 
-
         "num_epochs": num_epochs,
         "dataset": dataset,
         "num_layers": num_layers,
-        "batch_size": batch_size,
+        "train_batch_size": train_batch_size,
+        "valid_batch_size": valid_batch_size,
         "lr": lr,
         "momentum": momentum,
         "save_per_epoch": save_per_epoch,
