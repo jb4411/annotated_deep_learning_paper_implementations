@@ -37,18 +37,12 @@ def setup_dataset(dataset, batch_size=32):
 
     return data_loaders
 
-def UNUSED_get_model():
-    model = models.resnet18(pretrained=False)
-    num_features = model.fc.in_features
-    model.fc = nn.Linear(num_features, 10)
-    model = model.to(device)
-    return model
-
 
 def train_model(model, criterion, optimizer, num_epochs=10):
-    save_per_epoch = True
+    save_per_epoch = False
 
-    steps = 0
+    train_steps = 0
+    valid_steps = 0
     with experiment.record(name='sample', token='http://localhost:5005/api/v1/track?'):
         for epoch in range(num_epochs):
             print(f"Epoch {epoch}/{num_epochs}")
@@ -99,13 +93,15 @@ def train_model(model, criterion, optimizer, num_epochs=10):
                         if phase == 'train':
                             train_loss = running_loss/running_seen
                             train_acc = running_corrects/running_seen
-                            tracker.save(steps, {'loss.train': train_loss, 'accuracy.train': train_acc})
+                            tracker.save(train_steps, {'loss.train': train_loss, 'accuracy.train': train_acc})
+                            train_steps += 1
                         else:
                             valid_loss = running_loss/running_seen
                             valid_acc = running_corrects/running_seen
-                            tracker.save(steps, {'loss.train': train_loss, 'accuracy.train': train_acc,
+                            tracker.save(valid_steps, {'loss.train': train_loss, 'accuracy.train': train_acc,
                                                  'loss.valid': valid_loss, 'accuracy.valid': valid_acc})
-                    steps += 1
+                            valid_steps += 1
+
 
                 epoch_loss = running_loss / len(data_loaders[phase].dataset)
                 epoch_acc = running_corrects / len(data_loaders[phase].dataset)
