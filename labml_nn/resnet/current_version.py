@@ -9,6 +9,7 @@ import torch.nn as nn
 from torch import optim
 from torch.optim import Optimizer
 from labml import tracker, experiment, monit
+from torchvision.datasets import VisionDataset
 from torchvision.models import ResNet
 from torchvision.models.resnet import BasicBlock, Bottleneck, _resnet
 from typing import List, Any, Type, Union
@@ -69,7 +70,7 @@ def setup_dataset(dataset: DataSet, train_batch_size, valid_batch_size):
         Phase.VALID: torch.utils.data.DataLoader(val_data, batch_size=valid_batch_size, shuffle=False)
     }
 
-    return data_loaders
+    return data_loaders, train_data, val_data
 
 
 class Trainer:
@@ -81,16 +82,18 @@ class Trainer:
     num_layers: int
     # Type of block used in the ResNet model
     block_type: Type[Union[BasicBlock, Bottleneck, None]] = None
+    # Dataset to use (sets both train_data and val_data)
+    dataset: DataSet
     # Train dataset
-    train_data: DataSet
+    train_data: VisionDataset
     # Train batch size
     train_batch_size: int = 32
     # Valid dataset
-    val_data: DataSet
+    val_data: VisionDataset
     # Valid batch size
     valid_batch_size: int = 128
     # Loss function
-    criterion: _Loss
+    criterion: _Loss = nn.CrossEntropyLoss()
     # Optimizer
     optimizer: Optimizer
     # Optimizer Learning rate
@@ -103,15 +106,24 @@ class Trainer:
     train_log_interval: int = 10
     # device to run on
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    # Local webapi url or LabML token
+    token = 'http://localhost:5005/api/v1/track?'
     # internal
     _data_loaders: dict
-    _conf: dict
-    _train_corrects: int
     _train_seen: int
-    _valid_corrects: int
+    _train_correct: int
     _valid_seen: int
+    _valid_correct: int
 
-    def __init__(self, config: dict = None):
+    def __init__(self, dataset: DataSet, num_layers: int, run_name=None):
+        self.dataset = dataset
+        self.num_layers = num_layers
+        self.run_name = f"ResNet{num_layers} - {dataset}" if run_name is None else run_name
+        self._data_loaders, self.train_data, self.val_data = setup_dataset(self.dataset, self.train_batch_size,
+                                                                           self.valid_batch_size)
+        self.model, self.layers, self.block_type = get_model(self.num_layers, self.block_type)
+        self.optimizer = optim.SGD(self.model.parameters(), lr=self.lr, momentum=self.momentum,
+                                   weight_decay=self.weight_decay)
         tracker.set_scalar("loss.*", True)
         tracker.set_scalar("accuracy.*", True)
 
@@ -120,9 +132,17 @@ class Trainer:
         Arguments:
             num_epochs (int): number of epochs to run for
         """
-        pass
+        t_range = range(len(self._data_loaders[Phase.TRAIN]))
+        v_range = range(len(self._data_loaders[Phase.TRAIN]))
 
-    def step(self, inputs, labels, batch_idx, phase):
+        with experiment.record(name=self.run_name, token=self.token):
+            for epoch in monit.loop(range(num_epochs)):
+                for p, idx in monit.mix(('t', t_range), ('v', v_range)):
+                    phase = Phase.TRAIN if p == 't' else Phase.VALID
+                    (inputs, labels) = self._data_loaders[phase][idx]
+                    self.step(inputs, labels, phase, idx)
+
+    def step(self, inputs, labels, phase: Phase, batch_idx: int):
         inputs = inputs.to(self.device)
         labels = labels.to(self.device)
 
@@ -138,70 +158,19 @@ class Trainer:
                 self.optimizer.step()
 
         if phase == Phase.TRAIN:
-            self._train_corrects += torch.sum(preds == labels.data)
+            self._train_correct += torch.sum(preds == labels.data)
             self._train_seen += len(labels.data)
             # Increment the global step
             tracker.add_global_step(len(labels.data))
             # Store stats in the tracker
-            tracker.add({'loss.train': loss, 'accuracy.train': self._train_corrects / self._train_seen})
+            tracker.add({'loss.train': loss, 'accuracy.train': self._train_correct / self._train_seen})
             if batch_idx % self.train_log_interval == 0:
                 tracker.save()
         else:
-            self._valid_corrects += torch.sum(preds == labels.data)
+            self._valid_correct += torch.sum(preds == labels.data)
             self._valid_seen += len(labels.data)
-            tracker.add({'loss.valid': loss, 'accuracy.valid': self._valid_corrects / self._valid_seen})
+            tracker.add({'loss.valid': loss, 'accuracy.valid': self._valid_correct / self._valid_seen})
             tracker.save()
-
-
-def train_model(model, criterion, optimizer, num_epochs=10, save_per_epoch=False, name="sample"):
-    with experiment.record(name=name, token='http://localhost:5005/api/v1/track?'):
-        for epoch in monit.loop(range(num_epochs)):
-            # print(f"Epoch {epoch}/{num_epochs}")
-            # print('-' * 10)
-
-            for phase in [Phase.TRAIN, Phase.VALID]:
-                if phase == Phase.TRAIN:
-                    text = "Train"
-                    model.train()
-                else:
-                    text = "Valid"
-                    model.eval()
-
-                running_corrects = 0
-                running_seen = 0
-
-                for batch_idx, (inputs, labels) in monit.enum(text, data_loaders[phase]):
-                    inputs = inputs.to(device)
-                    labels = labels.to(device)
-
-                    optimizer.zero_grad()
-
-                    with torch.set_grad_enabled(phase == Phase.TRAIN):
-                        outputs = model(inputs)
-                        _, preds = torch.max(outputs, 1)
-                        loss = criterion(outputs, labels)
-
-                        if phase == Phase.TRAIN:
-                            loss.backward()
-                            optimizer.step()
-
-                    running_corrects += torch.sum(preds == labels.data)
-                    running_seen += len(labels.data)
-
-                    if phase == Phase.TRAIN:
-                        # Increment the global step
-                        tracker.add_global_step(len(labels.data))
-                        # Store stats in the tracker
-                        tracker.add({'loss.train': loss, 'accuracy.train': running_corrects/running_seen})
-                        if batch_idx % train_log_interval == 0:
-                            tracker.save()
-                    else:
-                        tracker.add({'loss.valid': loss, 'accuracy.valid': running_corrects/running_seen})
-                        tracker.save()
-            tracker.save()
-            tracker.new_line()
-
-    print('Training complete')
 
 
 def generate_resnet(layers: List[int], num_classes: int = 10, block_type: Type[Union[BasicBlock, Bottleneck]] = None,
@@ -298,6 +267,7 @@ def get_model(num_layers, block_type: Type[Union[BasicBlock, Bottleneck]] = None
 
 
 def main():
+
     # Number of epochs
     num_epochs = 3
     # Dataset
