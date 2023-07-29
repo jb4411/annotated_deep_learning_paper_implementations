@@ -19,6 +19,7 @@ from labml_nn.resnet import ResNetBase
 from torchvision import models
 from stl10 import STL10Configs
 from labml_nn.experiments.mnist import MNISTConfigs
+from torchvision import datasets
 
 class Configs(CIFAR10Configs):
     """
@@ -39,21 +40,8 @@ class Configs(CIFAR10Configs):
 
 
 class STLConfigs(Configs):
-    """
-    ## Configurations
-
-    We use `STL10Configs` which defines all the
-    dataset related configurations, optimizer, and a training loop.
-    """
-    dataset_name: str = 'STL10'
-    # Number of blocks for each feature map size
-    n_blocks: List[int] = [3, 3, 3]
-    # Number of channels for each feature map size
-    n_channels: List[int] = [16, 32, 64]
-    # Bottleneck sizes
-    bottlenecks: Optional[List[int]] = None
-    # Kernel size of the initial convolution layer
-    first_kernel_size: int = 3
+    train_dataset: datasets.STL10
+    valid_dataset: datasets.STL10
 
 
 @option(Configs.model)
@@ -92,6 +80,8 @@ def main():
     else:
         train_dataset = "stl10_train_dataset"
         valid_dataset = "stl10_valid_dataset"
+        train_dataset = "cifar10_train_augmented"
+        valid_dataset = "cifar10_valid_no_augment"
         conf = STLConfigs()
 
     # Load configurations

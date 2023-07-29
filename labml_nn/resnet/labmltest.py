@@ -1,12 +1,14 @@
 from enum import Enum
 
 import torch
-import torchvision
 from torchvision import datasets, models, transforms
 from torch.utils.tensorboard import SummaryWriter
 import torch.nn as nn
 import torch.optim as optim
-from torchvision.models.resnet import _resnet
+from labml import tracker, experiment
+
+tracker.set_scalar("loss.*", True)
+tracker.set_scalar("accuracy.*", True)
 
 
 class DataSet(Enum):
@@ -80,17 +82,24 @@ def train_model(model, criterion, optimizer, num_epochs=10):
                 running_corrects += torch.sum(preds == labels.data)
                 running_seen += len(labels.data)
 
+
                 # write to tensorboard
                 if phase == 'train':
-                    writer.add_scalar('training loss', running_loss, steps)
-                    writer.add_scalar('training accuracy', running_corrects/running_seen, steps)
+                    tracker.add('loss.train', running_loss)
+                    tracker.add('accuracy.train', running_corrects/running_seen)
                 else:
-                    writer.add_scalar('validation loss', running_loss, steps)
-                    writer.add_scalar('validation accuracy', running_corrects/running_seen, steps)
+                    tracker.add('loss.valid', running_loss)
+                    tracker.add('accuracy.valid', running_corrects / running_seen)
                 steps += 1
 
             epoch_loss = running_loss / len(data_loaders[phase].dataset)
             epoch_acc = running_corrects / len(data_loaders[phase].dataset)
+
+
+            tracker.save(epoch, {'loss.train': epoch_loss, 'accuracy.train': epoch_acc,
+                                                      'loss.valid': valid_loss, 'accuracy.valid': (valid_correct / valid_total)})
+
+
             print(f"{phase} Loss: {epoch_loss:.4f} Acc: {epoch_acc:.4f}")
 
             """# write to tensorboard
@@ -100,6 +109,8 @@ def train_model(model, criterion, optimizer, num_epochs=10):
             else:
                 writer.add_scalar('validation loss', epoch_loss, epoch)
                 writer.add_scalar('validation accuracy', epoch_acc, epoch)"""
+
+        tracker.new_line()
 
     print('Training complete')
 
