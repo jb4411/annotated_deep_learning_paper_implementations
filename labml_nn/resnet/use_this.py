@@ -160,15 +160,17 @@ def setup_steps():
             if phase == Phase.TRAIN:
                 t_count += 1
                 train_steps += t_step
-                if t_count == t_batch:
+                if t_count >= t_batch:
+                    t_count = 0
                     train_steps = target * (epoch + 1)
-                return train_steps
+                return int(train_steps)
             else:
                 v_count += 1
                 valid_steps += v_step
-                if v_count == v_batch:
+                if v_count >= v_batch:
+                    v_count = 0
                     valid_steps = target * (epoch + 1)
-                return valid_steps
+                return int(valid_steps)
 
         return inc
 
