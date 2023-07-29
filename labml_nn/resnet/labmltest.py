@@ -46,6 +46,8 @@ def UNUSED_get_model():
 
 
 def train_model(model, criterion, optimizer, num_epochs=10):
+    save_per_epoch = True
+
     steps = 0
     with experiment.record(name='sample', token='http://localhost:5005/api/v1/track?'):
         for epoch in range(num_epochs):
@@ -86,25 +88,37 @@ def train_model(model, criterion, optimizer, num_epochs=10):
                     running_corrects += torch.sum(preds == labels.data)
                     running_seen += len(labels.data)
 
-                    if phase == 'train':
-                        tracker.add('loss.train', running_loss/running_seen)
-                        tracker.add('accuracy.train', running_corrects/running_seen)
+                    if save_per_epoch:
+                        if phase == 'train':
+                            tracker.add('loss.train', running_loss/running_seen)
+                            tracker.add('accuracy.train', running_corrects/running_seen)
+                        else:
+                            tracker.add('loss.valid', running_loss/running_seen)
+                            tracker.add('accuracy.valid', running_corrects / running_seen)
                     else:
-                        tracker.add('loss.valid', running_loss/running_seen)
-                        tracker.add('accuracy.valid', running_corrects / running_seen)
+                        if phase == 'train':
+                            train_loss = running_loss/running_seen
+                            train_acc = running_corrects/running_seen
+                            tracker.save(steps, {'loss.train': train_loss, 'accuracy.train': train_acc})
+                        else:
+                            valid_loss = running_loss/running_seen
+                            valid_acc = running_corrects/running_seen
+                            tracker.save(steps, {'loss.train': train_loss, 'accuracy.train': train_acc,
+                                                 'loss.valid': valid_loss, 'accuracy.valid': valid_acc})
                     steps += 1
 
                 epoch_loss = running_loss / len(data_loaders[phase].dataset)
                 epoch_acc = running_corrects / len(data_loaders[phase].dataset)
-                if phase == 'train':
-                    train_loss = epoch_loss
-                    train_acc = epoch_acc
-                    tracker.save(epoch, {'loss.train': train_loss, 'accuracy.train': train_acc})
-                else:
-                    valid_loss = epoch_loss
-                    valid_acc = epoch_acc
-                    tracker.save(epoch, {'loss.train': epoch_loss, 'accuracy.train': epoch_acc,
-                                         'loss.valid': valid_loss, 'accuracy.valid': valid_acc})
+                if save_per_epoch:
+                    if phase == 'train':
+                        train_loss = epoch_loss
+                        train_acc = epoch_acc
+                        tracker.save(epoch, {'loss.train': train_loss, 'accuracy.train': train_acc})
+                    else:
+                        valid_loss = epoch_loss
+                        valid_acc = epoch_acc
+                        tracker.save(epoch, {'loss.train': train_loss, 'accuracy.train': train_acc,
+                                             'loss.valid': valid_loss, 'accuracy.valid': valid_acc})
 
             tracker.new_line()
 
