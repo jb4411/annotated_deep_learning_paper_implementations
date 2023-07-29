@@ -114,6 +114,7 @@ class Trainer:
     _train_correct: int
     _valid_seen: int
     _valid_correct: int
+    _conf: dict
 
     def __init__(self, dataset: DataSet, num_layers: int, run_name=None):
         self.dataset = dataset
@@ -121,17 +122,44 @@ class Trainer:
         self.run_name = f"ResNet{num_layers} - {dataset}" if run_name is None else run_name
         self._data_loaders, self.train_data, self.val_data = setup_dataset(self.dataset, self.train_batch_size,
                                                                            self.valid_batch_size)
-        self.model, self.layers, self.block_type = get_model(self.num_layers, self.block_type)
+        self.model, self.layers, self.block_type = get_model(self.num_layers, self.device, block_type=self.block_type)
         self.optimizer = optim.SGD(self.model.parameters(), lr=self.lr, momentum=self.momentum,
                                    weight_decay=self.weight_decay)
         tracker.set_scalar("loss.*", True)
         tracker.set_scalar("accuracy.*", True)
+
+    def create_conf(self):
+        """self._conf = {
+            "bottlenecks": None if self.block_type == BasicBlock else [64, 128, 256, 512],
+            "dataset_name": str(self.dataset).replace("DataSet.", ""),
+            "device": self.device,
+            #"device.device_info": ,
+            "first_kernel_size": ,
+            "inner_iterations": ,
+            "loss_func": ,
+
+
+
+            "dataset": dataset,
+            "num_layers": num_layers,
+            "train_batch_size": train_batch_size,
+            "valid_batch_size": valid_batch_size,
+            "lr": lr,
+            "momentum": momentum,
+            "save_per_epoch": save_per_epoch,
+            "step_type": step_type,
+            "model": model,
+            "criterion": criterion,
+            "optimizer": optimizer
+        }"""
 
     def train_model(self, num_epochs: int = 10):
         """
         Arguments:
             num_epochs (int): number of epochs to run for
         """
+        self._conf["epochs"] = num_epochs
+
         t_range = range(len(self._data_loaders[Phase.TRAIN]))
         v_range = range(len(self._data_loaders[Phase.TRAIN]))
 
@@ -221,7 +249,7 @@ def calculate_total_layers(layers: List[int], block: Type[Union[BasicBlock, Bott
     return total_layers
 
 
-def get_model(num_layers, block_type: Type[Union[BasicBlock, Bottleneck]] = None,
+def get_model(num_layers, device, block_type: Type[Union[BasicBlock, Bottleneck]] = None,
               **kwargs: Any) -> (ResNet, List[int], Type[Union[BasicBlock, Bottleneck]]):
     if num_layers in [18, 34, 50, 101, 152]:
         pre_defined = {
@@ -267,66 +295,19 @@ def get_model(num_layers, block_type: Type[Union[BasicBlock, Bottleneck]] = None
 
 
 def main():
-
     # Number of epochs
     num_epochs = 3
     # Dataset
-    dataset: DataSet = DataSet.CIFAR10
+    dataset = DataSet.CIFAR10
     # Number of layers for the resnet model
     num_layers = 101
 
-    # Block type
-    block_type: Type[Union[BasicBlock, Bottleneck, None]] = None
-    # Training batch size
-    train_batch_size = 32
-    # Valid batch size
-    valid_batch_size = 128
-    # Optimizer Learning rate
-    lr = 0.001
-    # Optimizer momentum
-    momentum = 0.9
-    # Optimizer weight_decay
-    weight_decay = 0.0001
+    trainer = Trainer(dataset, num_layers)
 
-    # metric save method
-    save_per_epoch = True
-    # Metric step type
-    global step_type
-    step_type = StepType.PERF_STEP
 
-    # model
-    model, layers, block_type = get_model(num_layers, block_type)
-
-    # Define loss and optimizer
-    criterion = nn.CrossEntropyLoss()
-    optimizer = optim.SGD(model.parameters(), lr=lr, momentum=momentum, weight_decay=weight_decay)
-
-    # Load dataset
-    setup_dataset(dataset, train_batch_size, valid_batch_size)
-
-    # create exp_conf
-    global exp_conf
-    exp_conf = {
-        "bottlenecks": None if block_type == BasicBlock else [64, 128, 256, 512],
-        "dataset_name": dataset,
-
-        "num_epochs": num_epochs,
-        "dataset": dataset,
-        "num_layers": num_layers,
-        "train_batch_size": train_batch_size,
-        "valid_batch_size": valid_batch_size,
-        "lr": lr,
-        "momentum": momentum,
-        "save_per_epoch": save_per_epoch,
-        "step_type": step_type,
-        "model": model,
-        "criterion": criterion,
-        "optimizer": optimizer
-    }
 
     start = time.perf_counter()
-    train_model(model, criterion, optimizer, num_epochs=num_epochs, save_per_epoch=save_per_epoch,
-                name=f"ResNet{num_layers} - {dataset}")
+
     end = time.perf_counter()
     print(f"Training took {end - start}")
 
