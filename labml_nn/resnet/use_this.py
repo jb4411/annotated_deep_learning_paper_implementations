@@ -6,7 +6,7 @@ import torch
 from torchvision import datasets, models, transforms
 import torch.nn as nn
 import torch.optim as optim
-from labml import tracker, experiment
+from labml import tracker, experiment, monit
 
 tracker.set_scalar("loss.*", True)
 tracker.set_scalar("accuracy.*", True)
@@ -58,13 +58,11 @@ def train_model(model, criterion, optimizer, num_epochs=10, save_per_epoch=False
     v_step = int(lcm / v_len)
 
     with experiment.record(name='sample', token='http://localhost:5005/api/v1/track?'):
-        for epoch in range(num_epochs):
-            epoch_start = time.perf_counter()
-            print(f"Epoch {epoch}/{num_epochs}")
-            print('-' * 10)
+        for epoch in monit.loop(range(num_epochs)):
+            #print(f"Epoch {epoch}/{num_epochs}")
+            #print('-' * 10)
 
             for phase in ['train', 'val']:
-                phase_start = time.perf_counter()
                 if phase == 'train':
                     model.train()
                 else:
@@ -129,14 +127,6 @@ def train_model(model, criterion, optimizer, num_epochs=10, save_per_epoch=False
                                                        'accuracy.valid': tracked_data['accuracy.valid'][i]})
                             valid_steps += v_step
 
-                phase_end = time.perf_counter()
-                if phase == 'train':
-                    tracker.save(train_steps - t_step, {'train.time': phase_end - phase_start})
-                else:
-                    tracker.save(valid_steps - v_step, {'valid.time': phase_end - phase_start})
-
-            epoch_end = time.perf_counter()
-            tracker.save(train_steps - t_step, {'Epoch time': epoch_end - epoch_start})
             tracker.new_line()
 
     print('Training complete')
