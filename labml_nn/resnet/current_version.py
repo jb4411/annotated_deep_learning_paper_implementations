@@ -251,20 +251,21 @@ def train_model(model, criterion, optimizer, num_epochs=10, save_per_epoch=False
                             loss.backward()
                             optimizer.step()
 
-                    running_loss += loss.item() * inputs.size(0)
+                    #running_loss += loss.item() * inputs.size(0)
                     running_corrects += torch.sum(preds == labels.data)
                     running_seen += len(labels.data)
 
                     if phase == Phase.TRAIN:
                         # Increment the global step
-                        tracker.add_global_step()
+                        tracker.add_global_step(len(labels.data))
                         # Store stats in the tracker
                         tracker.add({'loss.train': loss, 'accuracy.train': running_corrects/running_seen})
                         if batch_idx % train_log_interval == 0:
                             tracker.save()
                     else:
-                        tracker.save({'loss.valid': running_loss, 'accuracy.valid': running_corrects/running_seen})
-
+                        tracker.add({'loss.valid': loss, 'accuracy.valid': running_corrects/running_seen})
+                        tracker.save()
+            tracker.save()
             tracker.new_line()
 
     print('Training complete')
@@ -365,7 +366,7 @@ def get_model(num_layers, block_type: Type[Union[BasicBlock, Bottleneck]] = None
 
 def main():
     # Number of epochs
-    num_epochs = 10
+    num_epochs = 3
     # Dataset
     dataset: DataSet = DataSet.CIFAR10
     # Number of layers for the resnet model
@@ -376,7 +377,7 @@ def main():
     # Training batch size
     train_batch_size = 32
     # Valid batch size
-    valid_batch_size = 1024
+    valid_batch_size = 128
     # Optimizer Learning rate
     lr = 0.001
     # Optimizer momentum

@@ -86,7 +86,7 @@ def main():
 
     # Load configurations
     experiment.configs(conf, {
-        'n_blocks': [200, 200, 200],
+        #'n_blocks': [200, 200, 200],
         'first_kernel_size': 7,
 
         'optimizer.optimizer': 'SGD',
