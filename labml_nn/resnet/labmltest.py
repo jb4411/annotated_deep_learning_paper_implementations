@@ -87,10 +87,10 @@ def train_model(model, criterion, optimizer, num_epochs=10):
                     running_seen += len(labels.data)
 
                     if phase == 'train':
-                        tracker.add('loss.train', running_loss)
+                        tracker.add('loss.train', running_loss/running_seen)
                         tracker.add('accuracy.train', running_corrects/running_seen)
                     else:
-                        tracker.add('loss.valid', running_loss)
+                        tracker.add('loss.valid', running_loss/running_seen)
                         tracker.add('accuracy.valid', running_corrects / running_seen)
                     steps += 1
 

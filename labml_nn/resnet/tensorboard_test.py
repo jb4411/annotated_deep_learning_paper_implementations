@@ -82,10 +82,10 @@ def train_model(model, criterion, optimizer, num_epochs=10):
 
                 # write to tensorboard
                 if phase == 'train':
-                    writer.add_scalar('training loss', running_loss, steps)
+                    writer.add_scalar('training loss', running_loss/running_seen, steps)
                     writer.add_scalar('training accuracy', running_corrects/running_seen, steps)
                 else:
-                    writer.add_scalar('validation loss', running_loss, steps)
+                    writer.add_scalar('validation loss', running_loss/running_seen, steps)
                     writer.add_scalar('validation accuracy', running_corrects/running_seen, steps)
                 steps += 1
 
