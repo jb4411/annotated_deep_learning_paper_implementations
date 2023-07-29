@@ -1,3 +1,4 @@
+import math
 from enum import Enum
 
 import torch
@@ -20,7 +21,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 global data_loaders
 
 
-def setup_dataset(dataset, batch_size=32):
+def setup_dataset(dataset: DataSet, batch_size=32):
     if dataset == DataSet.CIFAR10:
         train_data = datasets.CIFAR10('./data', train=True, download=True, transform=transforms.ToTensor())
         val_data = datasets.CIFAR10('./data', train=False, download=True, transform=transforms.ToTensor())
@@ -43,15 +44,18 @@ def train_model(model, criterion, optimizer, num_epochs=10):
 
     train_steps = 0
     valid_steps = 0
+
+    t_len = len(data_loaders['train'])
+    v_len = len(data_loaders['val'])
+    lcm = math.lcm(t_len, v_len)
+    t_step = int(lcm / t_len)
+    v_step = int(lcm / v_len)
+
+
     with experiment.record(name='sample', token='http://localhost:5005/api/v1/track?'):
         for epoch in range(num_epochs):
             print(f"Epoch {epoch}/{num_epochs}")
             print('-' * 10)
-
-            train_loss = 0
-            valid_loss = 0
-            train_acc = 0
-            valid_acc = 0
 
             for phase in ['train', 'val']:
                 if phase == 'train':
@@ -84,24 +88,22 @@ def train_model(model, criterion, optimizer, num_epochs=10):
 
                     if save_per_epoch:
                         if phase == 'train':
-                            tracker.add('loss.train', running_loss/running_seen)
-                            tracker.add('accuracy.train', running_corrects/running_seen)
+                            tracker.add('loss.train', running_loss / running_seen)
+                            tracker.add('accuracy.train', running_corrects / running_seen)
                         else:
-                            tracker.add('loss.valid', running_loss/running_seen)
+                            tracker.add('loss.valid', running_loss / running_seen)
                             tracker.add('accuracy.valid', running_corrects / running_seen)
                     else:
                         if phase == 'train':
-                            train_loss = running_loss/running_seen
-                            train_acc = running_corrects/running_seen
+                            train_loss = running_loss / running_seen
+                            train_acc = running_corrects / running_seen
                             tracker.save(train_steps, {'loss.train': train_loss, 'accuracy.train': train_acc})
-                            train_steps += 1
+                            train_steps += t_step
                         else:
-                            valid_loss = running_loss/running_seen
-                            valid_acc = running_corrects/running_seen
-                            tracker.save(valid_steps, {'loss.train': train_loss, 'accuracy.train': train_acc,
-                                                 'loss.valid': valid_loss, 'accuracy.valid': valid_acc})
-                            valid_steps += 1
-
+                            valid_loss = running_loss / running_seen
+                            valid_acc = running_corrects / running_seen
+                            tracker.save(valid_steps, {'loss.valid': valid_loss, 'accuracy.valid': valid_acc})
+                            valid_steps += v_step
 
                 epoch_loss = running_loss / len(data_loaders[phase].dataset)
                 epoch_acc = running_corrects / len(data_loaders[phase].dataset)
@@ -125,7 +127,7 @@ def main():
     # Batch size
     batch_size = 32
     # Number of epochs
-    num_epochs = 3
+    num_epochs = 4
     # Learning rate
     lr = 0.001
     # Optimizer momentum
@@ -140,7 +142,7 @@ def main():
     optimizer = optim.SGD(model.parameters(), lr=lr, momentum=momentum)
 
     # Load dataset
-    setup_dataset(DataSet.CIFAR10, batch_size)
+    setup_dataset(DataSet.STL10, batch_size)
 
     train_model(model, criterion, optimizer, num_epochs=num_epochs)
 
