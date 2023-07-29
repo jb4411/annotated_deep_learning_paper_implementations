@@ -56,6 +56,8 @@ def train_model(model, criterion, optimizer, num_epochs=10, save_per_epoch=False
     lcm = math.lcm(t_len, v_len)
     t_step = int(lcm / t_len)
     v_step = int(lcm / v_len)
+    print(f"t_len = {t_len}, t_step = {t_step}")
+    print(f"v_len = {v_len}, v_step = {v_step}")
 
     with experiment.record(name='sample', token='http://localhost:5005/api/v1/track?'):
         for epoch in monit.loop(range(num_epochs)):
@@ -64,15 +66,17 @@ def train_model(model, criterion, optimizer, num_epochs=10, save_per_epoch=False
 
             for phase in ['train', 'val']:
                 if phase == 'train':
+                    text = "Train"
                     model.train()
                 else:
+                    text = "Valid"
                     model.eval()
 
                 running_loss = 0.0
                 running_corrects = 0
                 running_seen = 0
 
-                for inputs, labels in data_loaders[phase]:
+                for inputs, labels in monit.iterate(text, data_loaders[phase]):
                     inputs = inputs.to(device)
                     labels = labels.to(device)
 
@@ -105,15 +109,15 @@ def train_model(model, criterion, optimizer, num_epochs=10, save_per_epoch=False
                             tracked_data['accuracy.valid'].append(valid_acc)
                     else:
                         if phase == 'train':
+                            train_steps += t_step
                             train_loss = running_loss / running_seen
                             train_acc = running_corrects / running_seen
                             tracker.save(train_steps, {'loss.train': train_loss, 'accuracy.train': train_acc})
-                            train_steps += t_step
                         else:
+                            valid_steps += v_step
                             valid_loss = running_loss / running_seen
                             valid_acc = running_corrects / running_seen
                             tracker.save(valid_steps, {'loss.valid': valid_loss, 'accuracy.valid': valid_acc})
-                            valid_steps += v_step
 
                 if save_per_epoch:
                     if phase == 'train':
@@ -136,7 +140,7 @@ def main():
     # Batch size
     batch_size = 32
     # Number of epochs
-    num_epochs = 4
+    num_epochs = 5
     # Learning rate
     lr = 0.001
     # Optimizer momentum
@@ -154,7 +158,7 @@ def main():
     optimizer = optim.SGD(model.parameters(), lr=lr, momentum=momentum)
 
     # Load dataset
-    setup_dataset(DataSet.STL10, batch_size)
+    setup_dataset(DataSet.CIFAR10, batch_size)
 
     start = time.perf_counter()
     train_model(model, criterion, optimizer, num_epochs=num_epochs, save_per_epoch=save_per_epoch)
