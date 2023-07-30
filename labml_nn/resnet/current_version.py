@@ -9,7 +9,7 @@ from torchvision import datasets, models, transforms
 import torch.nn as nn
 from torch import optim
 from torch.optim import Optimizer
-from labml import tracker, experiment, monit
+from labml import tracker, experiment, monit, logger
 from torchvision.datasets import VisionDataset
 from torchvision.models import ResNet
 from torchvision.models.resnet import BasicBlock, Bottleneck, _resnet
@@ -111,16 +111,19 @@ class Trainer:
     token = 'http://localhost:5005/api/v1/track?'
     # internal
     _data_loaders: dict
-    _train_seen: int
-    _train_correct: int
-    _valid_seen: int
-    _valid_correct: int
+    _train_seen: int = 0
+    _train_correct: int = 0
+    _valid_seen: int = 0
+    _valid_correct: int = 0
     _conf: dict
 
     def __init__(self, dataset: DataSet, num_layers: int, run_name=None):
         self.dataset = dataset
         self.num_layers = num_layers
-        self.run_name = f"ResNet{num_layers} - {dataset}" if run_name is None else run_name
+        if run_name is None:
+            self.run_name = f"ResNet{num_layers} - {str(self.dataset).replace('DataSet.', '')}"
+        else:
+            self.run_name = run_name
         self._data_loaders, self.train_data, self.val_data = setup_dataset(self.dataset, self.train_batch_size,
                                                                            self.valid_batch_size)
         self.model, self.layers, self.block_type = get_model(self.num_layers, self.device, block_type=self.block_type)
@@ -128,6 +131,10 @@ class Trainer:
                                    weight_decay=self.weight_decay)
         tracker.set_scalar("loss.*", True)
         tracker.set_scalar("accuracy.*", True)
+
+
+        tracker.set_scalar("train_diff", True)
+        tracker.set_scalar("val_diff", True)
 
         self.create_conf()
 
@@ -157,8 +164,7 @@ class Trainer:
             "optimizer": optimizer
         }"""
 
-
-    def train_model(self, num_epochs: int = 10):
+    def train_model(self, num_epochs: int = 10, adjust_lr=False):
         """
         Arguments:
             num_epochs (int): number of epochs to run for
@@ -169,6 +175,9 @@ class Trainer:
         v_range = range(len(self._data_loaders[Phase.VALID]))
         t_data = list(self._data_loaders[Phase.TRAIN])
         v_data = list(self._data_loaders[Phase.VALID])
+        t_acc = [0.0, 0.0, 0.0]
+        v_acc = [0.0, 0.0, 0.0]
+        acc_idx = 0
         with experiment.record(name=self.run_name, token=self.token):
             for epoch in monit.loop(range(num_epochs)):
                 self._train_seen = 0
@@ -183,8 +192,21 @@ class Trainer:
                         phase = Phase.VALID
                         (inputs, labels) = v_data[idx]
                     self.step(inputs, labels, phase, idx)
-            tracker.save()
-            tracker.new_line()
+
+                tracker.save()
+                tracker.new_line()
+
+                if adjust_lr:
+                    t_acc[acc_idx] = self._train_correct / self._train_seen
+                    v_acc[acc_idx] = self._valid_correct / self._valid_seen
+                    acc_idx = (acc_idx + 1) % 3
+                    tracker.add({"train_diff": abs(min(t_acc) - max(t_acc)), "val_diff": abs(min(v_acc) - max(v_acc))})
+                    if (abs(min(t_acc) - max(t_acc)) <= 0.005) and (abs(min(t_acc) - max(t_acc)) <= 0.005):
+                        adjust_lr = False
+                        new_lr = self.lr / 10
+                        for param_group in self.optimizer.param_groups:
+                            param_group['lr'] = new_lr
+                        logger.log(f"Learning rate adjusted from {self.lr} to {new_lr}.")
 
     def step(self, inputs, labels, phase: Phase, batch_idx: int):
         inputs = inputs.to(self.device)
@@ -314,14 +336,17 @@ def main():
     # Number of epochs
     num_epochs = 10
     # Dataset
-    dataset = DataSet.CIFAR10
+    dataset = DataSet.STL10
     # Number of layers for the resnet model
     num_layers = 101
 
     trainer = Trainer(dataset, num_layers)
+    trainer.train_batch_size = 32
+    trainer.valid_batch_size = 32
+    trainer.lr = 0.1
 
     start = time.perf_counter()
-    trainer.train_model(num_epochs)
+    trainer.train_model(num_epochs, adjust_lr=True)
     end = time.perf_counter()
     print(f"Training took {end - start}")
 
