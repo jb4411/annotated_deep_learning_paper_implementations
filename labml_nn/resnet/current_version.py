@@ -346,7 +346,7 @@ def main():
     trainer.lr = 0.1
 
     start = time.perf_counter()
-    trainer.train_model(num_epochs, adjust_lr=True)
+    trainer.train_model(num_epochs, adjust_lr=False)
     end = time.perf_counter()
     print(f"Training took {end - start}")
 
