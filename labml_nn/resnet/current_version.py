@@ -4,6 +4,7 @@ from enum import Enum
 
 import torch
 from torch.nn.modules.loss import _WeightedLoss, _Loss
+from torch.utils.data import BatchSampler
 from torchvision import datasets, models, transforms
 import torch.nn as nn
 from torch import optim
@@ -128,7 +129,10 @@ class Trainer:
         tracker.set_scalar("loss.*", True)
         tracker.set_scalar("accuracy.*", True)
 
+        self.create_conf()
+
     def create_conf(self):
+        self._conf = dict()
         """self._conf = {
             "bottlenecks": None if self.block_type == BasicBlock else [64, 128, 256, 512],
             "dataset_name": str(self.dataset).replace("DataSet.", ""),
@@ -153,6 +157,7 @@ class Trainer:
             "optimizer": optimizer
         }"""
 
+
     def train_model(self, num_epochs: int = 10):
         """
         Arguments:
@@ -161,14 +166,25 @@ class Trainer:
         self._conf["epochs"] = num_epochs
 
         t_range = range(len(self._data_loaders[Phase.TRAIN]))
-        v_range = range(len(self._data_loaders[Phase.TRAIN]))
-
+        v_range = range(len(self._data_loaders[Phase.VALID]))
+        t_data = list(self._data_loaders[Phase.TRAIN])
+        v_data = list(self._data_loaders[Phase.VALID])
         with experiment.record(name=self.run_name, token=self.token):
             for epoch in monit.loop(range(num_epochs)):
-                for p, idx in monit.mix(('t', t_range), ('v', v_range)):
-                    phase = Phase.TRAIN if p == 't' else Phase.VALID
-                    (inputs, labels) = self._data_loaders[phase][idx]
+                self._train_seen = 0
+                self._train_correct = 0
+                self._valid_seen = 0
+                self._valid_correct = 0
+                for p, idx in monit.mix(('Train', t_range), ('Valid', v_range)):
+                    if p == 'Train':
+                        phase = Phase.TRAIN
+                        (inputs, labels) = t_data[idx]
+                    else:
+                        phase = Phase.VALID
+                        (inputs, labels) = v_data[idx]
                     self.step(inputs, labels, phase, idx)
+            tracker.save()
+            tracker.new_line()
 
     def step(self, inputs, labels, phase: Phase, batch_idx: int):
         inputs = inputs.to(self.device)
@@ -296,7 +312,7 @@ def get_model(num_layers, device, block_type: Type[Union[BasicBlock, Bottleneck]
 
 def main():
     # Number of epochs
-    num_epochs = 3
+    num_epochs = 10
     # Dataset
     dataset = DataSet.CIFAR10
     # Number of layers for the resnet model
@@ -304,10 +320,8 @@ def main():
 
     trainer = Trainer(dataset, num_layers)
 
-
-
     start = time.perf_counter()
-
+    trainer.train_model(num_epochs)
     end = time.perf_counter()
     print(f"Training took {end - start}")
 
